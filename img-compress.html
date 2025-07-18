@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Compressor</title>
+  <meta name="description" content="Compress images instantly online without quality loss. Drag & drop supported. SEO-friendly, fast & free." />
+  <meta name="keywords" content="image compressor, online image compression, free image tool, drag and drop image resizer" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom right, #f4f7f6, #ffffff);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      padding: 2rem 1rem;
+      text-align: center;
+      color: white;
+      border-radius: 0 0 20px 20px;
+    }
+
+    header h1 { font-size: 2rem; font-weight: 600; }
+    header p { font-size: 1rem; margin-top: 0.5rem; }
+
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    .drop-zone {
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      text-align: center;
+      border-radius: 12px;
+      transition: 0.3s;
+      cursor: pointer;
+      background: #f9f9f9;
+      margin-bottom: 1.5rem;
+    }
+
+    .drop-zone.dragover {
+      background-color: #e0f7f5;
+      border-color: #019180;
+    }
+
+    .drop-zone p {
+      font-weight: 500;
+      color: #666;
+    }
+
+    #imageUpload {
+      display: none;
+    }
+
+    #imagePreviewContainer {
+      display: none;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    #originalImage {
+      max-width: 100%;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      margin-top: 1rem;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(to right, #019180, #85b338);
+    }
+
+    button:disabled {
+      background: #bbb;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    #statusMessage {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #c0392b;
+    }
+
+    #statusMessage.success {
+      color: #27ae60;
+    }
+
+    footer {
+      margin-top: auto;
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 1.5rem 1rem;
+      color: white;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      border-radius: 20px 20px 0 0;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.5rem; }
+      .buttons { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Free Online Image Compressor</h1>
+    <p>Drag & drop your image, compress it, and download in seconds!</p>
+  </header>
+
+  <main>
+    <!-- Drag and Drop Zone -->
+    <div class="drop-zone" id="dropZone">
+      <p>Drag and drop your image here or click to upload</p>
+      <input type="file" id="imageUpload" accept="image/*" />
+    </div>
+
+    <!-- Preview -->
+    <div id="imagePreviewContainer">
+      <h3>Image Preview:</h3>
+      <img id="originalImage" src="" alt="Original Preview" />
+    </div>
+
+    <!-- Compression Level -->
+    <div>
+      <label for="compressionRange">Compression Level: <span id="compressionValue">50</span>%</label>
+      <input type="range" id="compressionRange" min="10" max="100" value="50" />
+    </div>
+
+    <!-- Buttons -->
+    <div class="buttons">
+      <button id="compressBtn" disabled>Compress & Download</button>
+      <button id="resetBtn" disabled>Reset</button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage"></div>
+  </main>
+
+  <footer>
+    © 2025 MyToolsWebsite. All rights reserved.
+  </footer>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const imageUpload = document.getElementById('imageUpload');
+    const originalImage = document.getElementById('originalImage');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const compressBtn = document.getElementById('compressBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const compressionRange = document.getElementById('compressionRange');
+    const compressionValue = document.getElementById('compressionValue');
+    const statusMessage = document.getElementById('statusMessage');
+
+    let uploadedFile = null;
+
+    compressionRange.addEventListener('input', () => {
+      compressionValue.textContent = compressionRange.value;
+    });
+
+    // Drag & Drop
+    dropZone.addEventListener('click', () => imageUpload.click());
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        imageUpload.files = e.dataTransfer;
+        handleImageUpload();
+      }
+    });
+
+    imageUpload.addEventListener('change', handleImageUpload);
+
+    function handleImageUpload() {
+      const file = imageUpload.files[0];
+      if (!file || !file.type.startsWith('image/')) {
+        showStatus('Please upload a valid image file.', false);
+        return reset();
+      }
+
+      uploadedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        originalImage.src = e.target.result;
+        previewContainer.style.display = 'block';
+        compressBtn.disabled = false;
+        resetBtn.disabled = false;
+        showStatus('', false);
+      };
+      reader.onerror = () => {
+        showStatus('Failed to read the image file.', false);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    compressBtn.addEventListener('click', () => {
+      if (!uploadedFile) return;
+
+      showStatus('Compressing image. Please wait...', false);
+
+      const quality = compressionRange.value / 100;
+      const img = new Image();
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          let { width, height } = img;
+
+          // Optional max resize to manage larger images
+          const maxWidth = 1600;
+          if (width > maxWidth) {
+            const ratio = maxWidth / width;
+            width = maxWidth;
+            height *= ratio;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(blob => {
+            if (!blob) {
+              return showStatus('Compression failed. Try with another image.', false);
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = uploadedFile.name.replace(/\.[^/.]+$/, '') + '_compressed.jpg';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showStatus('Image compressed and downloaded successfully!', true);
+          }, 'image/jpeg', quality);
+        } catch (error) {
+          showStatus('Unexpected error occurred while compressing.', false);
+        }
+      };
+
+      img.onerror = () => {
+        showStatus('Unable to load image. It may be corrupted.', false);
+      };
+
+      const reader = new FileReader();
+      reader.onload = e => img.src = e.target.result;
+      reader.onerror = () => showStatus('Failed to read image file.', false);
+      reader.readAsDataURL(uploadedFile);
+    });
+
+    resetBtn.addEventListener('click', reset);
+
+    function reset() {
+      imageUpload.value = '';
+      uploadedFile = null;
+      previewContainer.style.display = 'none';
+      compressBtn.disabled = true;
+      resetBtn.disabled = true;
+      originalImage.src = '';
+      showStatus('', false);
+    }
+
+    function showStatus(message, success) {
+      statusMessage.textContent = message;
+      statusMessage.className = success ? 'success' : '';
+    }
+  </script>
+</body>
+</html>

@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js"></script> 
   <style>
+    /* ... (CSS is identical to previous version, no changes needed for functionality) ... */
     * { box-sizing: border-box; margin:0; padding:0; }
     body {
       font-family: 'Poppins', sans-serif;
@@ -19,7 +20,7 @@
       margin:1rem; padding:1rem 2rem;
       background:linear-gradient(90deg,#00b09b,#96c93d);
       color:#fff; font-weight:600;
-      border-radius:1010px; /* Typo fix: removed extra '0' */
+      border-radius:10px; 
       text-align:center;
       width:100%; max-width:700px;
     }
@@ -99,10 +100,10 @@
   <footer>© 2025 My Tools Website</footer>
 
   <script>
-    console.log("Script started."); // Added for initial check
+    console.log("--- Application Start ---"); 
 
     const { createFFmpeg, fetchFile } = FFmpeg;
-    // VERY IMPORTANT: Set log: true to see ALL FFmpeg messages in console.
+    // Keep log: true for debugging. Switch to false for production.
     const ffmpeg = createFFmpeg({ log: true }); 
     let ffmpegLoaded = false;
     let selectedFile = null;
@@ -119,7 +120,7 @@
     const status = document.getElementById('status');
     const downloadLink = document.getElementById('downloadLink');
 
-    console.log("DOM elements referenced."); // Added check
+    console.log("All DOM elements referenced."); 
 
     // Utility to reset UI elements
     function resetProgress() {
@@ -127,32 +128,34 @@
       progressContainer.style.display = 'none';
       status.textContent = '';
       downloadLink.style.display = 'none';
-      console.log("Progress UI reset."); // Added check
+      console.log("UI progress indicators reset."); 
     }
 
     // Handles file selection (from input or drag/drop)
     function updateSelection(file) {
       if (!file) {
-          console.warn("No file provided to updateSelection.");
+          console.warn("No file object received in updateSelection.");
           return;
       }
       selectedFile = file;
       dropText.textContent = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
       
-      // Enable process button ONLY if FFmpeg is loaded AND a file is selected
+      // Crucial check for enabling the button
       if (ffmpegLoaded) { 
         processBtn.disabled = false;
-        console.log("File selected and FFmpeg loaded, process button enabled.");
+        status.textContent = '✅ Video selected. Click "Start Process" to begin.';
+        console.log("Video selected and FFmpeg engine is ready. Process button enabled.");
       } else {
         processBtn.disabled = true; // Keep disabled if FFmpeg not loaded yet
-        console.log("File selected, but FFmpeg not loaded yet. Process button remains disabled.");
+        status.textContent = '🔄 Video selected, waiting for engine to load...';
+        console.log("Video selected, but FFmpeg engine is NOT ready yet. Button remains disabled.");
       }
-      resetProgress();
+      resetProgress(); // Reset visual progress if any was left from previous attempt
     }
 
     // Event listener for file input change
     input.addEventListener('change', () => {
-      console.log("File input change detected.");
+      console.log("File input change event fired.");
       if (input.files.length > 0) {
         updateSelection(input.files[0]);
       } else {
@@ -160,14 +163,15 @@
         dropText.textContent = `Drag & Drop video here or click`;
         processBtn.disabled = true;
         resetProgress();
-        console.log("No file selected via input.");
+        status.textContent = 'No video selected.';
+        console.log("File input cleared. No video selected.");
       }
     });
 
     // Drag and Drop functionality
     ['dragenter','dragover'].forEach(e =>
       dropArea.addEventListener(e, event => {
-        event.preventDefault(); // Prevent default browser behavior (e.g., opening file)
+        event.preventDefault(); 
         dropArea.classList.add('hover');
       })
     );
@@ -178,7 +182,7 @@
       })
     );
     dropArea.addEventListener('drop', event => {
-      console.log("File dropped.");
+      console.log("Drop event detected.");
       if (event.dataTransfer.files.length > 0) {
         updateSelection(event.dataTransfer.files[0]);
       } else {
@@ -186,36 +190,41 @@
         dropText.textContent = `Drag & Drop video here or click`;
         processBtn.disabled = true;
         resetProgress();
-        console.log("No file dropped.");
+        status.textContent = 'No video dropped.';
+        console.log("No files dropped.");
       }
     });
 
     // Load FFmpeg engine on page load
     window.addEventListener('DOMContentLoaded', async () => {
-      console.log("DOMContentLoaded event fired. Attempting to load FFmpeg engine.");
-      status.textContent = '🔄 Loading video engine...';
+      console.log("DOMContentLoaded event fired. Attempting to load FFmpeg engine...");
+      status.textContent = '🔄 Loading video engine... This may take a moment.';
       try {
         await ffmpeg.load();
         ffmpegLoaded = true;
         status.textContent = '✅ Video engine loaded. Ready to process.';
-        console.log("FFmpeg engine loaded successfully!");
+        console.log("SUCCESS: FFmpeg engine loaded!");
         
-        // If a file was already selected (e.g., page reloaded with file), enable button
+        // If a file was already selected before engine loaded, enable button now
         if (selectedFile) { 
             processBtn.disabled = false;
-            console.log("A file was already selected, process button enabled.");
+            status.textContent = '✅ Engine loaded. Video previously selected. Ready to process.';
+            console.log("FFmpeg loaded after video selection. Process button enabled.");
         }
       } catch (error) {
-        ffmpegLoaded = false; // Ensure flag is false on error
-        status.textContent = '❌ Failed to load engine. Check browser console for errors related to "Cross-Origin-Opener-Policy" or "SharedArrayBuffer".';
-        console.error("FFmpeg Load Error:", error); // Log full error object
+        ffmpegLoaded = false; 
+        // THIS IS THE CRITICAL ERROR MESSAGE. It will guide you if this fails.
+        status.textContent = '❌ Failed to load video engine! ' + 
+                             'This usually means your browser lacks Cross-Origin Isolation. ' + 
+                             'Please check the browser console (F12) for "SharedArrayBuffer" or "Cross-Origin" errors.';
+        console.error("CRITICAL FFmpeg Load Error:", error); // Log full error object
         processBtn.disabled = true; // Ensure button is disabled if load fails
       }
     });
 
     // Helper to format time for ETA display
     function formatTime(seconds) {
-      if (!isFinite(seconds)) return 'N/A'; // Handle Infinity case
+      if (!isFinite(seconds) || seconds < 0) return 'N/A'; 
       const mins = Math.floor(seconds / 60);
       const secs = Math.round(seconds % 60);
       return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -224,125 +233,142 @@
     // Main processing logic
     processBtn.addEventListener('click', async () => {
       console.log("Process button clicked.");
+      // Double-check conditions (should be handled by disabled state, but good for robustness)
       if (!selectedFile) {
-        alert('Please select a video first.');
-        console.warn("Process button clicked without a selected file.");
+        alert('Internal error: No video selected. Please re-select.');
+        console.error("Process button clicked but selectedFile is null.");
         return;
       }
       if (!ffmpegLoaded) {
-        alert('Video engine is still loading or failed to load. Please wait or refresh.');
-        console.warn("Process button clicked but FFmpeg engine is not loaded.");
+        alert('Internal error: Video engine not loaded. Please refresh.');
+        console.error("Process button clicked but ffmpegLoaded is false.");
         return;
       }
 
-      processBtn.disabled = true; // Disable button immediately
+      processBtn.disabled = true; // Disable button immediately to prevent double-clicks
       resetProgress(); // Reset UI
-      status.textContent = 'Starting processing...';
+      status.textContent = 'Starting processing... Please wait.';
       progressContainer.style.display = 'block';
-      console.log("Starting video processing for:", selectedFile.name);
+      console.log("Initiating video processing for:", selectedFile.name);
+
+      let inputFileName = 'input.mp4'; // Use a generic name for FFmpeg's internal FS
+      let outName = `output_${Date.now()}.${formatSelect.value}`; // Unique name to prevent conflicts
+      let objectURLToRevoke = null; // To store URL.createObjectURL result for cleanup
 
       try {
-        // Write the input file to FFmpeg's virtual file system
-        const inputFileName = 'input_' + selectedFile.name.replace(/[^a-zA-Z0-9.]/g, '_'); // Sanitize filename
-        console.log(`Writing file to FFmpeg FS: ${inputFileName}`);
+        console.log(`Writing input file (${selectedFile.name}) to FFmpeg virtual file system as "${inputFileName}".`);
         await ffmpeg.FS('writeFile', inputFileName, await fetchFile(selectedFile));
-        console.log("File written to FFmpeg FS successfully.");
+        console.log("File successfully written to FFmpeg FS.");
 
         const fmt = formatSelect.value;
         const resolution = resolutionSelect.value;
-        const outName = `output_${Date.now()}.${fmt}`; // Unique output name
-        console.log(`Target format: ${fmt}, Resolution: ${resolution}, Output name: ${outName}`);
+        
+        let ffmpegArgs = ['-i', inputFileName]; 
 
-        let ffmpegArgs = ['-i', inputFileName]; // Use the sanitized input file name
-
-        // Add resolution argument if not 'original'
         if (resolution !== 'original') {
           ffmpegArgs.push('-vf', `scale=${resolution}`);
-          console.log(`Added resolution filter: scale=${resolution}`);
+          console.log(`Added resolution filter: -vf scale=${resolution}`);
         }
 
-        // Add codec arguments based on format
+        // Add codec arguments
         switch (fmt) {
           case 'mp4':
           case 'mov':
             ffmpegArgs.push('-vcodec', 'libx264', '-preset', 'medium', '-crf', '28'); 
-            console.log("Using H.264 codec preset.");
+            console.log("Using H.264 (libx264) codec.");
             break;
           case 'webm':
             ffmpegArgs.push('-vcodec', 'libvpx', '-b:v', '1M'); 
-            console.log("Using VP8 codec preset.");
+            console.log("Using VP8 (libvpx) codec.");
             break;
           case 'avi':
             ffmpegArgs.push('-vcodec', 'mjpeg'); 
-            console.log("Using MJPEG codec preset.");
+            console.log("Using MJPEG codec.");
             break;
           default:
-            console.warn("Unknown format selected, using default FFmpeg settings.");
+            console.warn("Unknown format selected, using default FFmpeg video codec.");
             break;
         }
         
         ffmpegArgs.push(outName); // Add the output file name last
-        console.log("FFmpeg command arguments:", ffmpegArgs.join(' '));
+        console.log("Final FFmpeg command arguments:", ffmpegArgs.join(' '));
 
         const startTime = performance.now();
         const fileSizeMB = selectedFile.size / (1024 * 1024); 
 
-        // Progress event listener
+        // Progress event listener for FFmpeg
         ffmpeg.setProgress(({ ratio }) => {
-          if (ratio < 0 || ratio > 1) return; // Sometimes ratio can be slightly out of bounds initially
+          if (ratio < 0 || ratio > 1) return; 
           const pct = Math.round(ratio * 100);
           const elapsed = (performance.now() - startTime) / 1000;
           const eta = ratio > 0 ? (elapsed / ratio) - elapsed : Infinity; 
           const speed = ratio > 0 ? (fileSizeMB * ratio / elapsed).toFixed(2) : '...'; 
 
-          progressBar.style.width = pct + '%';
-          status.textContent = `Processing ${pct}% — ETA: ${isFinite(eta) ? formatTime(eta) : 'calculating'} — ${speed} MB/s`;
+          progressBar.style.width = pct + '%%';
+          status.textContent = `Processing ${pct}% — ETA: ${formatTime(eta)} — ${speed} MB/s`;
         });
-        console.log("FFmpeg progress listener set up.");
+        console.log("FFmpeg progress listener activated.");
 
         // Execute FFmpeg command
+        console.log("Executing FFmpeg command...");
         await ffmpeg.run(...ffmpegArgs);
-        console.log("FFmpeg command finished executing.");
+        console.log("FFmpeg command execution completed.");
 
-        // Read the output file from FFmpeg's virtual file system
-        console.log(`Reading output file from FFmpeg FS: ${outName}`);
+        // Read the output file
+        console.log(`Reading output file "${outName}" from FFmpeg FS.`);
         const data = ffmpeg.FS('readFile', outName);
-        console.log("Output file read from FFmpeg FS.");
+        console.log("Output file read successfully.");
 
+        // Create a downloadable Blob URL
         const blob = new Blob([data.buffer], { type: `video/${fmt}` });
-        const url = URL.createObjectURL(blob);
-        console.log("Blob created and URL generated:", url);
+        objectURLToRevoke = URL.createObjectURL(blob); // Store URL for later revocation
+        console.log("Downloadable Blob URL created:", objectURLToRevoke);
 
-        downloadLink.href = url;
-        downloadLink.download = `converted_video.${fmt}`; 
+        downloadLink.href = objectURLToRevoke;
+        downloadLink.download = `converted_video_${Date.now()}.${fmt}`; 
         downloadLink.style.display = 'inline-block';
-        status.textContent = '✅ Conversion complete! You can download your video.';
-        console.log("Conversion successful, download link displayed.");
+        status.textContent = '✅ Conversion complete! Click the download link.';
+        console.log("Conversion successful. Download link displayed.");
 
       } catch (err) {
-        status.textContent = `❌ Conversion failed: ${err.message || "An unknown error occurred"}. Check console for details.`;
-        console.error("FFmpeg Run/Process Error:", err); // Log full error object
-        // Revoke URL if created before error, to prevent memory leaks
-        if (downloadLink.href && downloadLink.href.startsWith('blob:')) {
-            URL.revokeObjectURL(downloadLink.href);
-            downloadLink.href = '#';
+        // More specific error messages for the user
+        let errMsg = `An error occurred during conversion.`;
+        if (err.message && err.message.includes("Cannot load FFmpeg.wasm")) {
+             errMsg = '❌ Engine Load Error: FFmpeg.wasm could not be loaded. This often means your server is not configured correctly for Cross-Origin Isolation.';
+        } else if (err.message && err.message.includes("Aborted(CompileError")) {
+             errMsg = '❌ WebAssembly Error: Could not compile FFmpeg.wasm. Your browser might not support required features or there\'s a file integrity issue.';
+        } else if (err.message) {
+            errMsg = `❌ Conversion failed: ${err.message}`;
         }
-      } finally {
-        processBtn.disabled = false;
-        progressContainer.style.display = 'none';
+        status.textContent = errMsg + ' Please check your browser\'s console (F12) for detailed errors.';
+        console.error("FFmpeg Process/Run Error:", err); 
         
-        // Clean up FFmpeg's virtual file system after processing
-        // This is important to free up memory, especially for multiple conversions.
-        // Ensure to unlink only if the files exist.
+        // Ensure any created object URL is revoked on error
+        if (objectURLToRevoke && objectURLToRevoke.startsWith('blob:')) {
+            URL.revokeObjectURL(objectURLToRevoke);
+            objectURLToRevoke = null;
+            console.log("Object URL revoked due to error.");
+        }
+
+      } finally {
+        processBtn.disabled = false; // Re-enable button
+        progressContainer.style.display = 'none'; // Hide progress bar
+        status.textContent += ' Ready for new conversion.'; // Add final status update
+
+        // Cleanup FFmpeg's virtual file system
         try {
-            if (selectedFile) ffmpeg.FS('unlink', inputFileName); // Use the sanitized input file name
-            if (outName && ffmpeg.FS('readdir', '.').includes(outName)) { // Check if output file exists before unlinking
-                ffmpeg.FS('unlink', outName);
+            if (inputFileName && ffmpeg.FS('readdir', '.').includes(inputFileName)) {
+                ffmpeg.FS('unlink', inputFileName);
+                console.log(`Cleaned up input file "${inputFileName}" from FFmpeg FS.`);
             }
-            console.log("FFmpeg virtual file system cleaned up.");
+            if (outName && ffmpeg.FS('readdir', '.').includes(outName)) {
+                ffmpeg.FS('unlink', outName);
+                console.log(`Cleaned up output file "${outName}" from FFmpeg FS.`);
+            }
         } catch (cleanupErr) {
             console.warn("Error during FFmpeg FS cleanup:", cleanupErr);
         }
+        console.log("--- Processing Finished ---");
       }
     });
   </script>

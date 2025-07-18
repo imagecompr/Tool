@@ -2,103 +2,239 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Background Remover</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Tools Hub</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
+      background: #f0f4f8;
+      padding: 20px;
+      color: #333;
     }
-    h1 { color: #333; }
-    input[type="file"] {
-      margin: 1rem 0;
+    .container {
+      max-width: 800px;
+      margin: auto;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 30px;
+    }
+    .options {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .option {
+      padding: 15px 20px;
+      background: #ffffff;
+      border: 2px solid #007bff;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .option.active, .option:hover {
+      background: #007bff;
+      color: #fff;
+    }
+    .drop-zone {
+      border: 2px dashed #007bff;
+      border-radius: 12px;
+      padding: 40px;
+      background: #fff;
+      transition: background 0.3s;
+    }
+    .drop-zone.hover {
+      background: #e3f2fd;
     }
     canvas {
+      margin-top: 20px;
       max-width: 100%;
-      margin-top: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
     }
-    button {
-      margin-top: 1rem;
-      padding: 0.6rem 1.2rem;
-      font-size: 1rem;
-      background: #00b09b;
+    .controls {
+      margin-top: 20px;
+    }
+    .controls button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #28a745;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
     }
-    button:hover {
-      background: #019180;
+    .controls button:hover {
+      background-color: #218838;
     }
   </style>
 </head>
 <body>
-
-  <h1>🪄 AI Background Remover</h1>
-  <input type="file" id="imageUpload" accept="image/*" />
-  <canvas id="outputCanvas"></canvas>
-  <button id="downloadBtn" style="display:none;">Download Transparent Image</button>
+  <div class="container">
+    <h1>Image Editor (Frontend Only)</h1>
+    <div class="options">
+      <div class="option" onclick="toggleTool('grayscale')">Grayscale</div>
+      <div class="option" onclick="toggleTool('blur')">Blur</div>
+      <div class="option" onclick="toggleTool('enhance')">Enhance</div>
+      <div class="option" onclick="toggleTool('whitebg')">White BG</div>
+      <div class="option" onclick="toggleTool('invert')">Invert Colors</div>
+      <div class="option" onclick="toggleTool('rotate')">Rotate 90°</div>
+      <div class="option" onclick="toggleTool('crop')">Crop (center)</div>
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <p>Drag & drop your image here or click to select</p>
+      <input type="file" accept="image/*" style="display:none" id="fileInput">
+    </div>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+      <button onclick="applyTools()">Apply Tools</button>
+      <button onclick="downloadImage('png')">Download PNG</button>
+      <button onclick="downloadImage('jpeg')">Download JPG</button>
+    </div>
+  </div>
 
   <script>
-    const imageUpload = document.getElementById('imageUpload');
-    const canvas = document.getElementById('outputCanvas');
-    const ctx = canvas.getContext('2d');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext("2d");
+    let selectedTools = [];
+    let loadedImage = null;
 
-    let bodyPixNet;
-
-    async function loadModel() {
-      bodyPixNet = await bodyPix.load();
-      console.log('✅ BodyPix model loaded');
+    function toggleTool(tool) {
+      const index = selectedTools.indexOf(tool);
+      if (index > -1) {
+        selectedTools.splice(index, 1);
+        document.querySelector(`.option[onclick*="${tool}"]`).classList.remove('active');
+      } else {
+        selectedTools.push(tool);
+        document.querySelector(`.option[onclick*="${tool}"]`).classList.add('active');
+      }
     }
 
-    async function removeBackground(image) {
-      const segmentation = await bodyPixNet.segmentPerson(image);
+    dropZone.addEventListener('click', () => fileInput.click());
 
-      canvas.width = image.width;
-      canvas.height = image.height;
+    fileInput.addEventListener('change', e => {
+      if (e.target.files[0]) {
+        handleImage(e.target.files[0]);
+      }
+    });
 
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('hover');
+    });
 
-      ctx.drawImage(image, 0, 0);
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('hover');
+    });
 
-      for (let i = 0; i < data.length / 4; i++) {
-        const shouldKeep = segmentation.data[i];
-        if (!shouldKeep) {
-          data[i * 4 + 3] = 0; // Set alpha to 0 (transparent)
-        }
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('hover');
+      if (e.dataTransfer.files[0]) {
+        handleImage(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleImage(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          loadedImage = img;
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function applyTools() {
+      if (!loadedImage) return;
+      let tempCanvas = document.createElement('canvas');
+      let tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = loadedImage.width;
+      tempCanvas.height = loadedImage.height;
+      tempCtx.drawImage(loadedImage, 0, 0);
+
+      if (selectedTools.includes('whitebg')) {
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(loadedImage, 0, 0);
       }
 
-      ctx.putImageData(imageData, 0, 0);
-      downloadBtn.style.display = 'inline-block';
+      if (selectedTools.includes('grayscale')) {
+        let imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        for (let i = 0; i < imgData.data.length; i += 4) {
+          const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3;
+          imgData.data[i] = imgData.data[i + 1] = imgData.data[i + 2] = avg;
+        }
+        tempCtx.putImageData(imgData, 0, 0);
+      }
+
+      if (selectedTools.includes('blur')) {
+        tempCtx.filter = 'blur(5px)';
+        tempCtx.drawImage(tempCanvas, 0, 0);
+        tempCtx.filter = 'none';
+      }
+
+      if (selectedTools.includes('enhance')) {
+        tempCtx.filter = 'brightness(1.2) contrast(1.2)';
+        tempCtx.drawImage(tempCanvas, 0, 0);
+        tempCtx.filter = 'none';
+      }
+
+      if (selectedTools.includes('invert')) {
+        let imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        for (let i = 0; i < imgData.data.length; i += 4) {
+          imgData.data[i] = 255 - imgData.data[i];
+          imgData.data[i + 1] = 255 - imgData.data[i + 1];
+          imgData.data[i + 2] = 255 - imgData.data[i + 2];
+        }
+        tempCtx.putImageData(imgData, 0, 0);
+      }
+
+      if (selectedTools.includes('rotate')) {
+        const rotatedCanvas = document.createElement('canvas');
+        rotatedCanvas.width = tempCanvas.height;
+        rotatedCanvas.height = tempCanvas.width;
+        const rotatedCtx = rotatedCanvas.getContext('2d');
+        rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+        rotatedCtx.rotate(90 * Math.PI / 180);
+        rotatedCtx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
+        tempCanvas = rotatedCanvas;
+      }
+
+      if (selectedTools.includes('crop')) {
+        const cropW = tempCanvas.width / 2;
+        const cropH = tempCanvas.height / 2;
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = cropW;
+        cropCanvas.height = cropH;
+        cropCanvas.getContext('2d').drawImage(tempCanvas, cropW / 2, cropH / 2, cropW, cropH, 0, 0, cropW, cropH);
+        tempCanvas = cropCanvas;
+      }
+
+      canvas.width = tempCanvas.width;
+      canvas.height = tempCanvas.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(tempCanvas, 0, 0);
     }
 
-    imageUpload.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const img = new Image();
-      img.onload = () => removeBackground(img);
-      img.src = URL.createObjectURL(file);
-    });
-
-    downloadBtn.addEventListener('click', () => {
+    function downloadImage(type) {
       const link = document.createElement('a');
-      link.download = 'no-bg-image.png';
-      link.href = canvas.toDataURL();
+      link.download = `edited-image.${type}`;
+      link.href = canvas.toDataURL(`image/${type}`);
       link.click();
-    });
-
-    loadModel(); // Load BodyPix model on page load
+    }
   </script>
 </body>
 </html>

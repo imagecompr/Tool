@@ -81,10 +81,9 @@
       <div class="option" onclick="toggleTool('grayscale')">Grayscale</div>
       <div class="option" onclick="toggleTool('blur')">Blur</div>
       <div class="option" onclick="toggleTool('enhance')">Enhance</div>
-      <div class="option" onclick="toggleTool('whitebg')">White BG</div>
       <div class="option" onclick="toggleTool('invert')">Invert Colors</div>
-      <div class="option" onclick="toggleTool('rotate')">Rotate 90°</div>
-      <div class="option" onclick="toggleTool('crop')">Crop (center)</div>
+      <div class="option" onclick="toggleTool('rotate')">Rotate</div>
+      <div class="option" onclick="toggleTool('crop')">Crop</div>
     </div>
     <div class="drop-zone" id="dropZone">
       <p>Drag & drop your image here or click to select</p>
@@ -93,8 +92,7 @@
     <canvas id="canvas"></canvas>
     <div class="controls">
       <button onclick="applyTools()">Apply Tools</button>
-      <button onclick="downloadImage('png')">Download PNG</button>
-      <button onclick="downloadImage('jpeg')">Download JPG</button>
+      <button onclick="chooseDownloadFormat()">Download</button>
     </div>
   </div>
 
@@ -105,41 +103,36 @@
     const ctx = canvas.getContext("2d");
     let selectedTools = [];
     let loadedImage = null;
+    let rotationDegrees = 0;
+    let cropStart = null;
+    let cropEnd = null;
+    let cropping = false;
 
     function toggleTool(tool) {
       const index = selectedTools.indexOf(tool);
+      const element = document.querySelector(`.option[onclick*="${tool}"]`);
       if (index > -1) {
         selectedTools.splice(index, 1);
-        document.querySelector(`.option[onclick*="${tool}"]`).classList.remove('active');
+        element.classList.remove('active');
       } else {
         selectedTools.push(tool);
-        document.querySelector(`.option[onclick*="${tool}"]`).classList.add('active');
+        element.classList.add('active');
       }
     }
 
     dropZone.addEventListener('click', () => fileInput.click());
-
     fileInput.addEventListener('change', e => {
-      if (e.target.files[0]) {
-        handleImage(e.target.files[0]);
-      }
+      if (e.target.files[0]) handleImage(e.target.files[0]);
     });
-
     dropZone.addEventListener('dragover', e => {
       e.preventDefault();
       dropZone.classList.add('hover');
     });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('hover');
-    });
-
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
     dropZone.addEventListener('drop', e => {
       e.preventDefault();
       dropZone.classList.remove('hover');
-      if (e.dataTransfer.files[0]) {
-        handleImage(e.dataTransfer.files[0]);
-      }
+      if (e.dataTransfer.files[0]) handleImage(e.dataTransfer.files[0]);
     });
 
     function handleImage(file) {
@@ -150,12 +143,28 @@
           loadedImage = img;
           canvas.width = img.width;
           canvas.height = img.height;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0);
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
+
+    canvas.addEventListener('mousedown', e => {
+      if (!selectedTools.includes('crop')) return;
+      cropping = true;
+      const rect = canvas.getBoundingClientRect();
+      cropStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    });
+
+    canvas.addEventListener('mouseup', e => {
+      if (!selectedTools.includes('crop') || !cropping) return;
+      cropping = false;
+      const rect = canvas.getBoundingClientRect();
+      cropEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      applyTools();
+    });
 
     function applyTools() {
       if (!loadedImage) return;
@@ -164,12 +173,6 @@
       tempCanvas.width = loadedImage.width;
       tempCanvas.height = loadedImage.height;
       tempCtx.drawImage(loadedImage, 0, 0);
-
-      if (selectedTools.includes('whitebg')) {
-        tempCtx.fillStyle = '#ffffff';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.drawImage(loadedImage, 0, 0);
-      }
 
       if (selectedTools.includes('grayscale')) {
         let imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
@@ -203,30 +206,45 @@
       }
 
       if (selectedTools.includes('rotate')) {
+        const degrees = parseInt(prompt("Enter rotation degrees (e.g. 90, 180):", "90")) || 0;
+        const radians = degrees * Math.PI / 180;
         const rotatedCanvas = document.createElement('canvas');
-        rotatedCanvas.width = tempCanvas.height;
-        rotatedCanvas.height = tempCanvas.width;
+        const isVertical = degrees % 180 !== 0;
+        rotatedCanvas.width = isVertical ? tempCanvas.height : tempCanvas.width;
+        rotatedCanvas.height = isVertical ? tempCanvas.width : tempCanvas.height;
         const rotatedCtx = rotatedCanvas.getContext('2d');
         rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-        rotatedCtx.rotate(90 * Math.PI / 180);
+        rotatedCtx.rotate(radians);
         rotatedCtx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
         tempCanvas = rotatedCanvas;
       }
 
-      if (selectedTools.includes('crop')) {
-        const cropW = tempCanvas.width / 2;
-        const cropH = tempCanvas.height / 2;
+      if (selectedTools.includes('crop') && cropStart && cropEnd) {
+        const x = Math.min(cropStart.x, cropEnd.x);
+        const y = Math.min(cropStart.y, cropEnd.y);
+        const width = Math.abs(cropEnd.x - cropStart.x);
+        const height = Math.abs(cropEnd.y - cropStart.y);
         const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = cropW;
-        cropCanvas.height = cropH;
-        cropCanvas.getContext('2d').drawImage(tempCanvas, cropW / 2, cropH / 2, cropW, cropH, 0, 0, cropW, cropH);
+        cropCanvas.width = width;
+        cropCanvas.height = height;
+        cropCanvas.getContext('2d').drawImage(tempCanvas, x, y, width, height, 0, 0, width, height);
         tempCanvas = cropCanvas;
+        cropStart = cropEnd = null;
       }
 
       canvas.width = tempCanvas.width;
       canvas.height = tempCanvas.height;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
+    }
+
+    function chooseDownloadFormat() {
+      const format = prompt("Enter download format: png or jpg").toLowerCase();
+      if (format === 'png' || format === 'jpg' || format === 'jpeg') {
+        downloadImage(format === 'jpg' ? 'jpeg' : format);
+      } else {
+        alert('Invalid format. Please enter png or jpg.');
+      }
     }
 
     function downloadImage(type) {

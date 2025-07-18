@@ -11,18 +11,24 @@
       box-sizing: border-box;
     }
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f4f8;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #dfe9f3, #ffffff);
       padding: 20px;
       color: #333;
     }
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
       text-align: center;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
     }
     h1 {
       margin-bottom: 30px;
+      font-size: 2rem;
+      color: #007bff;
     }
     .options {
       display: flex;
@@ -47,8 +53,9 @@
       border: 2px dashed #007bff;
       border-radius: 12px;
       padding: 40px;
-      background: #fff;
+      background: #f9f9f9;
       transition: background 0.3s;
+      cursor: pointer;
     }
     .drop-zone.hover {
       background: #e3f2fd;
@@ -56,21 +63,25 @@
     canvas {
       margin-top: 20px;
       max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 10px;
     }
     .controls {
       margin-top: 20px;
     }
     .controls button {
-      padding: 10px 20px;
+      padding: 12px 24px;
       margin: 10px;
-      background-color: #28a745;
+      background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s;
     }
     .controls button:hover {
-      background-color: #218838;
+      background-color: #0056b3;
     }
   </style>
 </head>
@@ -78,12 +89,10 @@
   <div class="container">
     <h1>Image Editor (Frontend Only)</h1>
     <div class="options">
-      <div class="option" onclick="toggleTool('grayscale')">Grayscale</div>
-      <div class="option" onclick="toggleTool('blur')">Blur</div>
-      <div class="option" onclick="toggleTool('enhance')">Enhance</div>
-      <div class="option" onclick="toggleTool('invert')">Invert Colors</div>
-      <div class="option" onclick="toggleTool('rotate')">Rotate</div>
-      <div class="option" onclick="toggleTool('crop')">Crop</div>
+      <div class="option" onclick="applyTool('grayscale')">Grayscale</div>
+      <div class="option" onclick="applyTool('blur')">Blur</div>
+      <div class="option" onclick="applyTool('enhance')">Enhance</div>
+      <div class="option" onclick="applyTool('invert')">Invert Colors</div>
     </div>
     <div class="drop-zone" id="dropZone">
       <p>Drag & drop your image here or click to select</p>
@@ -91,7 +100,6 @@
     </div>
     <canvas id="canvas"></canvas>
     <div class="controls">
-      <button onclick="applyTools()">Apply Tools</button>
       <button onclick="chooseDownloadFormat()">Download</button>
     </div>
   </div>
@@ -101,24 +109,7 @@
     const fileInput = document.getElementById('fileInput');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext("2d");
-    let selectedTools = [];
     let loadedImage = null;
-    let rotationDegrees = 0;
-    let cropStart = null;
-    let cropEnd = null;
-    let cropping = false;
-
-    function toggleTool(tool) {
-      const index = selectedTools.indexOf(tool);
-      const element = document.querySelector(`.option[onclick*="${tool}"]`);
-      if (index > -1) {
-        selectedTools.splice(index, 1);
-        element.classList.remove('active');
-      } else {
-        selectedTools.push(tool);
-        element.classList.add('active');
-      }
-    }
 
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', e => {
@@ -151,52 +142,38 @@
       reader.readAsDataURL(file);
     }
 
-    canvas.addEventListener('mousedown', e => {
-      if (!selectedTools.includes('crop')) return;
-      cropping = true;
-      const rect = canvas.getBoundingClientRect();
-      cropStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    });
+    function applyTool(tool) {
+      if (!loadedImage) return alert("Please upload an image first.");
 
-    canvas.addEventListener('mouseup', e => {
-      if (!selectedTools.includes('crop') || !cropping) return;
-      cropping = false;
-      const rect = canvas.getBoundingClientRect();
-      cropEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      applyTools();
-    });
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      tempCtx.drawImage(canvas, 0, 0);
 
-    function applyTools() {
-      if (!loadedImage) return;
-      let tempCanvas = document.createElement('canvas');
-      let tempCtx = tempCanvas.getContext('2d');
-      tempCanvas.width = loadedImage.width;
-      tempCanvas.height = loadedImage.height;
-      tempCtx.drawImage(loadedImage, 0, 0);
-
-      if (selectedTools.includes('grayscale')) {
-        let imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      if (tool === 'grayscale') {
+        const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         for (let i = 0; i < imgData.data.length; i += 4) {
-          const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3;
-          imgData.data[i] = imgData.data[i + 1] = imgData.data[i + 2] = avg;
+          const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+          imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = avg;
         }
         tempCtx.putImageData(imgData, 0, 0);
       }
 
-      if (selectedTools.includes('blur')) {
-        tempCtx.filter = 'blur(5px)';
+      if (tool === 'blur') {
+        tempCtx.filter = 'blur(4px)';
         tempCtx.drawImage(tempCanvas, 0, 0);
         tempCtx.filter = 'none';
       }
 
-      if (selectedTools.includes('enhance')) {
+      if (tool === 'enhance') {
         tempCtx.filter = 'brightness(1.2) contrast(1.2)';
         tempCtx.drawImage(tempCanvas, 0, 0);
         tempCtx.filter = 'none';
       }
 
-      if (selectedTools.includes('invert')) {
-        let imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      if (tool === 'invert') {
+        const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
         for (let i = 0; i < imgData.data.length; i += 4) {
           imgData.data[i] = 255 - imgData.data[i];
           imgData.data[i + 1] = 255 - imgData.data[i + 1];
@@ -205,40 +182,25 @@
         tempCtx.putImageData(imgData, 0, 0);
       }
 
-      if (selectedTools.includes('rotate')) {
-        const degrees = parseInt(prompt("Enter rotation degrees (e.g. 90, 180):", "90")) || 0;
-        const radians = degrees * Math.PI / 180;
-        const rotatedCanvas = document.createElement('canvas');
-        const isVertical = degrees % 180 !== 0;
-        rotatedCanvas.width = isVertical ? tempCanvas.height : tempCanvas.width;
-        rotatedCanvas.height = isVertical ? tempCanvas.width : tempCanvas.height;
-        const rotatedCtx = rotatedCanvas.getContext('2d');
-        rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-        rotatedCtx.rotate(radians);
-        rotatedCtx.drawImage(tempCanvas, -tempCanvas.width / 2, -tempCanvas.height / 2);
-        tempCanvas = rotatedCanvas;
-      }
-
-      if (selectedTools.includes('crop') && cropStart && cropEnd) {
-        const x = Math.min(cropStart.x, cropEnd.x);
-        const y = Math.min(cropStart.y, cropEnd.y);
-        const width = Math.abs(cropEnd.x - cropStart.x);
-        const height = Math.abs(cropEnd.y - cropStart.y);
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = width;
-        cropCanvas.height = height;
-        cropCanvas.getContext('2d').drawImage(tempCanvas, x, y, width, height, 0, 0, width, height);
-        tempCanvas = cropCanvas;
-        cropStart = cropEnd = null;
-      }
-
-      canvas.width = tempCanvas.width;
-      canvas.height = tempCanvas.height;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(tempCanvas, 0, 0);
+      notifyUser(`${tool.charAt(0).toUpperCase() + tool.slice(1)} applied successfully!`);
+    }
+
+    function notifyUser(message) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(message);
+      } else if ("Notification" in window && Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") new Notification(message);
+        });
+      } else {
+        alert(message);
+      }
     }
 
     function chooseDownloadFormat() {
+      if (!loadedImage) return alert("Please upload and edit an image before downloading.");
       const format = prompt("Enter download format: png or jpg").toLowerCase();
       if (format === 'png' || format === 'jpg' || format === 'jpeg') {
         downloadImage(format === 'jpg' ? 'jpeg' : format);
@@ -248,10 +210,21 @@
     }
 
     function downloadImage(type) {
-      const link = document.createElement('a');
-      link.download = `edited-image.${type}`;
-      link.href = canvas.toDataURL(`image/${type}`);
-      link.click();
+      try {
+        const link = document.createElement('a');
+        link.download = `edited-image.${type}`;
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, `image/${type}`);
+      } catch (err) {
+        alert('Download failed. Please try again.');
+        console.error(err);
+      }
     }
   </script>
 </body>

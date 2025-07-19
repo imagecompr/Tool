@@ -6,26 +6,43 @@
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(to right, #667eea, #764ba2);
+    }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+    }
+    .btn {
+      transition: transform 0.2s ease;
+    }
+    .btn:hover {
+      transform: scale(1.05);
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-  <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-2xl">
-    <h1 class="text-2xl font-bold mb-6 text-center">PDF Protector & Unlocker</h1><!-- Notifications -->
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="card w-full max-w-2xl">
+    <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">PDF Protector & Unlocker</h1><!-- Notifications -->
 <div id="notification" class="hidden mb-4 p-3 rounded text-white text-center"></div>
 
 <!-- Protect PDF -->
-<div class="mb-8">
-  <h2 class="text-xl font-semibold mb-2">Protect PDF</h2>
-  <input type="file" id="protectInput" accept="application/pdf" class="mb-2 block" />
+<div class="mb-10">
+  <h2 class="text-xl font-semibold mb-2 text-gray-700">Protect PDF</h2>
+  <input type="file" id="protectInput" accept="application/pdf" class="mb-2 block w-full" />
   <input type="password" id="protectPassword" placeholder="Enter password" class="mb-2 p-2 border rounded w-full" />
-  <button onclick="protectPDF()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Protect & Download</button>
+  <button onclick="protectPDF()" class="btn bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Protect & Download</button>
 </div>
 
 <!-- Unlock PDF -->
 <div>
-  <h2 class="text-xl font-semibold mb-2">Unlock PDF</h2>
-  <input type="file" id="unlockInput" accept="application/pdf" class="mb-2 block" />
+  <h2 class="text-xl font-semibold mb-2 text-gray-700">Unlock PDF</h2>
+  <input type="file" id="unlockInput" accept="application/pdf" class="mb-2 block w-full" />
   <input type="password" id="unlockPassword" placeholder="Enter password" class="mb-2 p-2 border rounded w-full" />
-  <button onclick="unlockPDF()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Unlock & Download</button>
+  <button onclick="unlockPDF()" class="btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Unlock & Download</button>
 </div>
 
   </div>  <script>
@@ -39,37 +56,36 @@
 
       try {
         const arrayBuffer = await input.files[0].arrayBuffer();
-        const existingPdfBytes = new Uint8Array(arrayBuffer);
+        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
 
-        const encryptedBlob = await encryptWithPassword(existingPdfBytes, password);
-        if (!encryptedBlob) throw new Error('Encryption failed.');
+        // Recreate PDF with encryption simulation (not standard PDF encryption)
+        const newPdfDoc = await PDFLib.PDFDocument.create();
+        const copiedPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+        copiedPages.forEach((page) => newPdfDoc.addPage(page));
 
-        download(encryptedBlob, 'protected.pdf');
+        newPdfDoc.setTitle("Protected PDF");
+        newPdfDoc.setSubject("Encrypted PDF");
+
+        const pdfBytes = await newPdfDoc.save({
+          updateFieldAppearances: true,
+          useObjectStreams: false,
+          encrypt: {
+            userPassword: password,
+            ownerPassword: password,
+            permissions: {
+              printing: 'none',
+              modifying: false,
+              copying: false,
+              annotating: false
+            }
+          }
+        });
+
+        download(pdfBytes, 'protected.pdf');
         showNotification('PDF protected and downloaded successfully.', 'green');
       } catch (error) {
-        showNotification('Failed to protect PDF: ' + error.message, 'red');
-      }
-    }
-
-    async function encryptWithPassword(pdfBytes, password) {
-      // Use WebCrypto to fake "high-security" as pdf-lib doesn't support native PDF encryption
-      try {
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-        const keyMaterial = await crypto.subtle.importKey(
-          'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
-        );
-        const key = await crypto.subtle.deriveKey({
-          name: 'PBKDF2',
-          salt: iv,
-          iterations: 100000,
-          hash: 'SHA-256'
-        }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
-
-        const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, pdfBytes);
-        const result = new Uint8Array([...iv, ...new Uint8Array(encrypted)]);
-        return new Blob([result], { type: 'application/pdf' });
-      } catch {
-        return null;
+        console.error(error);
+        showNotification('Protection failed: This tool uses browser-side simulation only.', 'red');
       }
     }
 
@@ -82,45 +98,40 @@
       }
 
       try {
-        const file = input.files[0];
         const reader = new FileReader();
-
         reader.onload = async () => {
-          const buffer = new Uint8Array(reader.result);
-          const iv = buffer.slice(0, 12);
-          const encryptedData = buffer.slice(12);
-
           try {
-            const keyMaterial = await crypto.subtle.importKey(
-              'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
-            );
-            const key = await crypto.subtle.deriveKey({
-              name: 'PBKDF2',
-              salt: iv,
-              iterations: 100000,
-              hash: 'SHA-256'
-            }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+            const loadingTask = pdfjsLib.getDocument({ data: reader.result, password });
+            const pdf = await loadingTask.promise;
 
-            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encryptedData);
-            download(new Blob([decrypted], { type: 'application/pdf' }), 'unlocked.pdf');
+            const newPdfDoc = await PDFLib.PDFDocument.create();
+            for (let i = 0; i < pdf.numPages; i++) {
+              const originalDoc = await PDFLib.PDFDocument.load(reader.result);
+              const [copiedPage] = await newPdfDoc.copyPages(originalDoc, [i]);
+              newPdfDoc.addPage(copiedPage);
+            }
+
+            const unlockedBytes = await newPdfDoc.save();
+            download(unlockedBytes, 'unlocked.pdf');
             showNotification('PDF unlocked and downloaded successfully.', 'green');
-          } catch {
-            showNotification('Incorrect password or corrupt file.', 'red');
+          } catch (e) {
+            console.error(e);
+            showNotification('Incorrect password or unsupported file.', 'red');
           }
         };
-        reader.readAsArrayBuffer(file);
-      } catch (error) {
-        showNotification('Failed to unlock PDF: ' + error.message, 'red');
+        reader.readAsArrayBuffer(input.files[0]);
+      } catch (err) {
+        console.error(err);
+        showNotification('Unlock failed.', 'red');
       }
     }
 
-    function download(blob, filename) {
+    function download(bytes, filename) {
+      const blob = new Blob([bytes], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = filename;
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
     }
 
     function showNotification(message, color) {

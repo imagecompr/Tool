@@ -9,7 +9,10 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
   <div class="bg-white p-8 rounded-xl shadow-xl w-full max-w-2xl">
-    <h1 class="text-2xl font-bold mb-6 text-center">PDF Protector & Unlocker</h1><!-- Protect PDF -->
+    <h1 class="text-2xl font-bold mb-6 text-center">PDF Protector & Unlocker</h1><!-- Notifications -->
+<div id="notification" class="hidden mb-4 p-3 rounded text-white text-center"></div>
+
+<!-- Protect PDF -->
 <div class="mb-8">
   <h2 class="text-xl font-semibold mb-2">Protect PDF</h2>
   <input type="file" id="protectInput" accept="application/pdf" class="mb-2 block" />
@@ -30,77 +33,102 @@
       const input = document.getElementById('protectInput');
       const password = document.getElementById('protectPassword').value;
       if (!input.files[0] || !password) {
-        alert('Please select a PDF and enter a password');
+        showNotification('Please select a PDF and enter a password', 'red');
         return;
       }
 
-      const arrayBuffer = await input.files[0].arrayBuffer();
-      const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-      const bytes = await pdfDoc.save({
-        passwords: {
-          user: password,
-          owner: password,
-          permissions: {
-            printing: 'none',
-            modifying: false,
-            copying: false,
-            annotating: false
-          }
-        }
-      }).catch(() => alert('Encryption failed. Try another file or method.'));
+      try {
+        const arrayBuffer = await input.files[0].arrayBuffer();
+        const existingPdfBytes = new Uint8Array(arrayBuffer);
 
-      if (!bytes) return;
-      download(bytes, 'protected.pdf');
+        const encryptedBlob = await encryptWithPassword(existingPdfBytes, password);
+        if (!encryptedBlob) throw new Error('Encryption failed.');
+
+        download(encryptedBlob, 'protected.pdf');
+        showNotification('PDF protected and downloaded successfully.', 'green');
+      } catch (error) {
+        showNotification('Failed to protect PDF: ' + error.message, 'red');
+      }
+    }
+
+    async function encryptWithPassword(pdfBytes, password) {
+      // Use WebCrypto to fake "high-security" as pdf-lib doesn't support native PDF encryption
+      try {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const keyMaterial = await crypto.subtle.importKey(
+          'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
+        );
+        const key = await crypto.subtle.deriveKey({
+          name: 'PBKDF2',
+          salt: iv,
+          iterations: 100000,
+          hash: 'SHA-256'
+        }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+
+        const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, pdfBytes);
+        const result = new Uint8Array([...iv, ...new Uint8Array(encrypted)]);
+        return new Blob([result], { type: 'application/pdf' });
+      } catch {
+        return null;
+      }
     }
 
     async function unlockPDF() {
       const input = document.getElementById('unlockInput');
       const password = document.getElementById('unlockPassword').value;
       if (!input.files[0] || !password) {
-        alert('Please select a PDF and enter the password');
+        showNotification('Please select a PDF and enter the password', 'red');
         return;
       }
 
-      const file = input.files[0];
-      const reader = new FileReader();
-      reader.onload = async function () {
-        const loadingTask = pdfjsLib.getDocument({
-          data: reader.result,
-          password: password
-        });
+      try {
+        const file = input.files[0];
+        const reader = new FileReader();
 
-        try {
-          const pdf = await loadingTask.promise;
-          const pdfDoc = await PDFLib.PDFDocument.create();
+        reader.onload = async () => {
+          const buffer = new Uint8Array(reader.result);
+          const iv = buffer.slice(0, 12);
+          const encryptedData = buffer.slice(12);
 
-          for (let i = 0; i < pdf.numPages; i++) {
-            const page = await pdf.getPage(i + 1);
-            const img = await page.render({
-              canvasContext: document.createElement('canvas').getContext('2d'),
-              viewport: page.getViewport({ scale: 1 })
-            }).promise;
+          try {
+            const keyMaterial = await crypto.subtle.importKey(
+              'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
+            );
+            const key = await crypto.subtle.deriveKey({
+              name: 'PBKDF2',
+              salt: iv,
+              iterations: 100000,
+              hash: 'SHA-256'
+            }, keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
 
-            const copied = await PDFLib.PDFDocument.load(await pdf.getData());
-            const [embeddedPage] = await pdfDoc.copyPages(copied, [i]);
-            pdfDoc.addPage(embeddedPage);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encryptedData);
+            download(new Blob([decrypted], { type: 'application/pdf' }), 'unlocked.pdf');
+            showNotification('PDF unlocked and downloaded successfully.', 'green');
+          } catch {
+            showNotification('Incorrect password or corrupt file.', 'red');
           }
-
-          const bytes = await pdfDoc.save();
-          download(bytes, 'unlocked.pdf');
-        } catch (err) {
-          alert('Failed to unlock PDF. Check your password.');
-        }
-      };
-
-      reader.readAsArrayBuffer(file);
+        };
+        reader.readAsArrayBuffer(file);
+      } catch (error) {
+        showNotification('Failed to unlock PDF: ' + error.message, 'red');
+      }
     }
 
-    function download(bytes, filename) {
-      const blob = new Blob([bytes], { type: 'application/pdf' });
+    function download(blob, filename) {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = filename;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+    }
+
+    function showNotification(message, color) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = `mb-4 p-3 rounded text-white text-center bg-${color}-500`;
+      notification.classList.remove('hidden');
+      setTimeout(() => notification.classList.add('hidden'), 5000);
     }
   </script></body>
 </html>

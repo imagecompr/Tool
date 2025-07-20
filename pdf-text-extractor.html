@@ -127,6 +127,17 @@
       display: none;
     }
 
+    .notification {
+      margin-top: 1rem;
+      padding: 0.75rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      display: none;
+      background: #dff0d8;
+      color: #3c763d;
+      text-align: center;
+    }
+
     @media (max-width: 768px) {
       .tool-container {
         margin: 1rem;
@@ -156,6 +167,8 @@
 
     <textarea id="outputText" placeholder="Extracted text will appear here..."></textarea>
     <a id="downloadTxt" class="extract download-link" download="extracted-text.txt">Download .txt</a>
+
+    <div class="notification" id="notification"></div>
   </div>
 
   <footer>
@@ -168,6 +181,7 @@
     const pdfInput = document.getElementById('pdfInput');
     const fileInfo = document.getElementById('fileInfo');
     const outputText = document.getElementById('outputText');
+    const notification = document.getElementById('notification');
 
     uploadZone.addEventListener('click', () => pdfInput.click());
     uploadZone.addEventListener('dragover', (e) => {
@@ -193,11 +207,21 @@
       }
     }
 
+    function showNotification(message, isError = false) {
+      notification.textContent = message;
+      notification.style.background = isError ? '#f8d7da' : '#dff0d8';
+      notification.style.color = isError ? '#721c24' : '#3c763d';
+      notification.style.display = 'block';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 5000);
+    }
+
     async function extractText() {
       const file = pdfInput.files[0];
       if (!file) return alert("Please upload a PDF file.");
 
-      const separatePages = confirm("Do you want to separate extracted text page-wise?");
+      const separatePages = confirm("Do you want to keep text separate for each page? Click OK for separate pages or Cancel to merge all.");
 
       document.getElementById('progress').style.display = 'block';
       const progressBar = document.getElementById('progressBar');
@@ -206,36 +230,39 @@
 
       const reader = new FileReader();
       reader.onload = async function () {
-        const typedArray = new Uint8Array(reader.result);
-        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        try {
+          const typedArray = new Uint8Array(reader.result);
+          const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
 
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const strings = content.items.map(item => item.str);
+          let fullText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const strings = content.items.map(item => item.str);
 
-          let pageText = strings.join(' ');
+            let pageText = strings.join(' ');
+            pageText = pageText.replace(/\n/g, ' ');
 
-          // Try converting detected headings into HTML headings
-          pageText = pageText.replace(/\n/g, ' ');
-          pageText = pageText.replace(/\b([A-Z][A-Z\s]{2,})\b/g, '<h2>$1</h2>');
+            fullText += separatePages ? `\n--- Page ${i} ---\n${pageText}\n` : `${pageText} `;
 
-          fullText += separatePages ? `<h3>--- Page ${i} ---</h3>\n${pageText}\n\n` : `${pageText} `;
+            const percent = Math.round((i / pdf.numPages) * 100);
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = percent + '%';
+          }
 
-          const percent = Math.round((i / pdf.numPages) * 100);
-          progressBar.style.width = percent + '%';
-          progressBar.textContent = percent + '%';
+          outputText.value = fullText.trim();
+
+          const blob = new Blob([outputText.value], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const link = document.getElementById('downloadTxt');
+          link.href = url;
+          link.style.display = 'inline-block';
+          link.onclick = () => showNotification('✅ Text file downloaded successfully.');
+
+          showNotification('✅ Text extraction complete.');
+        } catch (err) {
+          showNotification('❌ Failed to extract text. Possibly due to handwritten or highlighted content.', true);
         }
-
-        outputText.style.minHeight = '200px';
-        outputText.value = fullText.replace(/<[^>]+>/g, '');
-
-        const blob = new Blob([outputText.value], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.getElementById('downloadTxt');
-        link.href = url;
-        link.style.display = 'inline-block';
       };
       reader.readAsArrayBuffer(file);
     }

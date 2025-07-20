@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,29 +6,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My Tools Website – Free Image & PDF Tools Online</title>
 
-  <!-- SEO Meta -->
   <meta name="description" content="Free online tools for editing images, converting PDFs, compressing videos, and more. Fast, secure, and user-friendly tools for productivity." />
   <meta name="keywords" content="Online Tools, Image Tools, PDF Tools, Video Compressor, Background Remover, Free PDF Editor" />
   <meta name="author" content="My Tools Website" />
   <link rel="canonical" href="https://yourdomain.com/" />
 
-  <!-- Open Graph -->
   <meta property="og:title" content="My Tools Website – Free Online Image & PDF Tools" />
   <meta property="og:description" content="Resize, compress, convert images, manage PDFs and compress videos quickly and securely online." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://yourdomain.com/" />
   <meta property="og:image" content="https://yourdomain.com/assets/og-preview.jpg" />
 
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="My Tools Website – Free Online Image & PDF Tools" />
   <meta name="twitter:description" content="A suite of fast, secure online tools for image editing, PDF management, and video compression." />
   <meta name="twitter:image" content="https://yourdomain.com/assets/og-preview.jpg" />
 
-  <!-- Favicon -->
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
 
-  <!-- Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -38,7 +34,6 @@
   }
   </script>
 
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
@@ -47,7 +42,6 @@
       font-family: 'Poppins', sans-serif;
       background: #f7f9fb;
       color: #333;
-      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       min-height: 100vh;
@@ -68,7 +62,6 @@
       margin: 0 0.8rem;
       text-decoration: none;
       font-weight: 500;
-      transition: color .3s;
     }
     nav a:hover { text-decoration: underline; }
     main {
@@ -114,7 +107,7 @@
     .tool-card h3 {
       font-size: 1.2rem;
       margin-bottom: 0.8rem;
-      color: #111;
+      font-weight: 600;
     }
     .tool-card a {
       display: inline-block;
@@ -123,7 +116,6 @@
       color: white;
       border-radius: 6px;
       font-weight: 500;
-      transition: background .3s;
       text-decoration: none;
     }
     .tool-card a:hover {
@@ -133,19 +125,11 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    section:not(:first-of-type) { margin-top: 3rem; }
-    section#about p, section#contact p {
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: center;
-      color: #555;
-      font-size: 1rem;
-    }
     footer {
       margin-top: 4rem;
       font-size: 0.95rem;
-      border-radius: 12px;
     }
+    section:not(:first-of-type) { margin-top: 3rem; }
     @media (max-width: 768px) {
       header h1 { font-size: 2rem; }
       nav a { margin: 0.5rem; }
@@ -160,164 +144,72 @@
   <nav>
     <a href="#images-tools">Image</a>
     <a href="#pdf-tools">PDF</a>
-    <a href="#other-tools">Other</a>
+    <a href="#video-tools">Video</a>
     <a href="#about">About</a>
     <a href="#contact">Contact</a>
   </nav>
 </header>
 
-<!-- Top Ad -->
-<div style="text-align:center; margin:20px 0;">
-  <div class="ad-placeholder" style="background:#e0e0e0;color:#777;padding:1rem;border-radius:6px;min-height:90px;">
-    Loading ad…
-  </div>
-</div>
-
 <main>
-
-  <!-- Image Tools -->
+  <!-- IMAGE TOOLS -->
   <section id="images-tools">
     <h2 class="section-title">Image Tools</h2>
     <div class="tools-grid">
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1581090700227-4e1b19ed6b7f?auto=format&fit=crop&w=600&q=80" alt="Resize Image" loading="lazy" />
-        <h3>Resize Image</h3>
-        <a href="img-resize.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1581090700227-4e1b19ed6b7f?auto=format&fit=crop&w=600&q=80" alt="Compress Image" loading="lazy" />
-        <h3>Compress Image</h3>
-        <a href="img-compress.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80" alt="Image Collage" loading="lazy" />
-        <h3>Image Collage</h3>
-        <a href="image-collage.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1512499617640-c2f9992f0f18?auto=format&fit=crop&w=600&q=80" alt="Crop Image" loading="lazy" />
-        <h3>Crop Image</h3>
-        <a href="image-cropper.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80" alt="Image Filter" loading="lazy" />
-        <h3>Image Filter</h3>
-        <a href="image-filter.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1563784461183-44a634bdb4b4?auto=format&fit=crop&w=600&q=80" alt="Image Format Converter" loading="lazy" />
-        <h3>Image Format</h3>
-        <a href="image-formate.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1581067728043-1dfbcd6b8cf4?auto=format&fit=crop&w=600&q=80" alt="Watermark Image" loading="lazy" />
-        <h3>Image Watermark</h3>
-        <a href="image-watermark.html">Use Tool</a>
-      </div>
+      <div class="tool-card"><img src="..." alt="Resize Image"><h3>Resize Image</h3><a href="img-resize.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Compress Image"><h3>Compress Image</h3><a href="img-compress.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Image Collage"><h3>Image Collage</h3><a href="image-collage.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Crop Image"><h3>Crop Image</h3><a href="image-cropper.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Image Filter"><h3>Image Filter</h3><a href="image-filter.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Image Format"><h3>Image Format</h3><a href="image-formate.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Watermark Image"><h3>Image Watermark</h3><a href="image-watermark.html">Use Tool</a></div>
     </div>
   </section>
 
-  <!-- PDF Tools -->
+  <!-- PDF TOOLS -->
   <section id="pdf-tools">
     <h2 class="section-title">PDF Tools</h2>
     <div class="tools-grid">
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1581090700227-4e1b19ed6b7f?auto=format&fit=crop&w=600&q=80" alt="Merge PDFs" loading="lazy" />
-        <h3>Merge PDFs</h3>
-        <a href="pdf-merger.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>PDF to Image</h3>
-        <a href="pdf-Img.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1611605698327-bd8e91b0e042?auto=format&fit=crop&w=600&q=80" alt="Image to PDF" loading="lazy" />
-        <h3>Image to PDF</h3>
-        <a href="img-pdf.html">Use Tool</a>
-      </div>
-      
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>Blank page & page no.</h3>
-        <a href="pdf-blank-no.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>PDF Page Reorder</h3>
-        <a href="pdf-reorder">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>PDF Page Rotator</h3>
-        <a href="pdf-rotator.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>PDF Split</h3>
-        <a href="pdf-split.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>PDF Text Extractor</h3>
-        <a href="pdf-text-extractor.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1607083201311-0c3f3f4d9ef3?auto=format&fit=crop&w=600&q=80" alt="PDF to Image" loading="lazy" />
-        <h3>PDF Watermark</h3>
-        <a href="pdf-watermark.html">Use Tool</a>
-      </div>
-      
+      <div class="tool-card"><img src="..." alt="Merge PDFs"><h3>Merge PDFs</h3><a href="pdf-merger.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="PDF to Image"><h3>PDF to Image</h3><a href="pdf-Img.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Image to PDF"><h3>Image to PDF</h3><a href="img-pdf.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Blank Page"><h3>Blank page & page no.</h3><a href="pdf-blank-no.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Reorder Pages"><h3>PDF Page Reorder</h3><a href="pdf-reorder">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Rotate Pages"><h3>PDF Page Rotator</h3><a href="pdf-rotator.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Split PDF"><h3>PDF Split</h3><a href="pdf-split.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Text Extractor"><h3>PDF Text Extractor</h3><a href="pdf-text-extractor.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="PDF Watermark"><h3>PDF Watermark</h3><a href="pdf-watermark.html">Use Tool</a></div>
     </div>
   </section>
-
-  <!-- Other Tools -->
-  <section id="other-tools">
-    <h2 class="section-title">Other Tools</h2>
+  
+  <!-- VIDEO TOOLS -->
+  <section id="video-tools">
+    <h2 class="section-title">Video Tools</h2>
     <div class="tools-grid">
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1611605698327-bd8e91b0e042?auto=format&fit=crop&w=600&q=80" alt="Video Compressor" loading="lazy" />
-        <h3>Video Compressor</h3>
-        <a href="vid-compress.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1611605698327-bd8e91b0e042?auto=format&fit=crop&w=600&q=80" alt="Background Remover" loading="lazy" />
-        <h3>Background Remover</h3>
-        <a href="background-remover.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1611605698327-bd8e91b0e042?auto=format&fit=crop&w=600&q=80" alt="Background Remover" loading="lazy" />
-        <h3>Video-GIF</h3>
-        <a href="vid-gif.html">Use Tool</a>
-      </div>
-      <div class="tool-card">
-        <img src="https://images.unsplash.com/photo-1611605698327-bd8e91b0e042?auto=format&fit=crop&w=600&q=80" alt="Background Remover" loading="lazy" />
-        <h3>Zip viewer & Extractor</h3>
-        <a href="zip-view&extract.html">Use Tool</a>
-      </div>
+      <div class="tool-card"><img src="..." alt="Video Compressor"><h3>Video Compressor</h3><a href="vid-compress.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Background Remover"><h3>Background Remover</h3><a href="background-remover.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Video to GIF"><h3>Video-GIF</h3><a href="vid-gif.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Zip Viewer"><h3>Zip Viewer & Extractor</h3><a href="zip-view&extract.html">Use Tool</a></div>
+
+      <div class="tool-card"><img src="..." alt="Video Cropper"><h3>Video Cropper</h3><a href="vid-cropper.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Mute Video"><h3>Mute Video</h3><a href="vid-mute.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Change Speed"><h3>Change Video Speed</h3><a href="vid-speed.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Video Trimmer"><h3>Video Trimmer</h3><a href="vid-timmer.html">Use Tool</a></div>
+      <div class="tool-card"><img src="..." alt="Watermark"><h3>Video Watermark</h3><a href="vid-watermark.html">Use Tool</a></div>
     </div>
   </section>
 
-  <!-- About -->
+  <!-- ABOUT -->
   <section id="about">
     <h2 class="section-title">About Us</h2>
-    <p>My Tools Website provides a suite of fast, simple, and free online tools for editing images, converting PDFs, compressing videos, and more. No sign-up needed.</p>
+    <p style="text-align:center; max-width:800px; margin:0 auto;">My Tools Website provides fast, free tools for image editing, PDF conversion, and video compression — all in your browser.</p>
   </section>
 
-  <!-- Contact -->
+  <!-- CONTACT -->
   <section id="contact">
     <h2 class="section-title">Contact Us</h2>
-    <p>Have questions or suggestions? Email us at <a href="mailto:info@mytoolswebsite.com">info@mytoolswebsite.com</a></p>
+    <p style="text-align:center;">Questions or feedback? Email us at <a href="mailto:info@mytoolswebsite.com">info@mytoolswebsite.com</a></p>
   </section>
-
 </main>
-
-<!-- Bottom Ad -->
-<div style="text-align:center; margin:40px auto;">
-  <div class="ad-placeholder" style="background:#e0e0e0;color:#777;padding:1rem;border-radius:6px;min-height:90px;">
-    Loading ad…
-  </div>
-</div>
 
 <footer>© 2025 My Tools Website. All rights reserved.</footer>
 

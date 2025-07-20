@@ -137,6 +137,25 @@
       background: #1B5E20;
     }
 
+    .progress {
+      margin-top: 1rem;
+      width: 100%;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 20px;
+      width: 0%;
+      background: #4CAF50;
+      text-align: center;
+      color: white;
+      line-height: 20px;
+      font-size: 0.8rem;
+    }
+
     @media (max-width: 768px) {
       .controls {
         flex-direction: column;
@@ -187,6 +206,10 @@
       <button class="convert" onclick="convertToGif()">Convert to GIF</button>
     </div>
 
+    <div class="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
     <div id="gifResult" style="text-align:center;">
       <img id="gifPreview" />
       <br />
@@ -205,6 +228,8 @@
     const videoPreview = document.getElementById('videoPreview');
     const frameRateInput = document.getElementById('frameRate');
     const frameRateValue = document.getElementById('frameRateValue');
+    const progressBar = document.getElementById('progressBar');
+    const progressContainer = document.querySelector('.progress');
     let videoFile;
 
     frameRateInput.addEventListener('input', () => {
@@ -256,9 +281,16 @@
 
       const duration = videoPreview.duration;
       const frameCount = Math.floor(duration * frameRate);
-
       let currentTime = 0;
       let captured = 0;
+
+      progressContainer.style.display = 'block';
+
+      function updateProgress() {
+        const percent = Math.floor((captured / frameCount) * 100);
+        progressBar.style.width = percent + '%';
+        progressBar.textContent = percent + '%';
+      }
 
       function captureFrame() {
         if (captured >= frameCount) {
@@ -273,6 +305,7 @@
           ctx.drawImage(videoPreview, 0, 0, width, height);
           gif.addFrame(ctx, {copy: true, delay: 1000 / frameRate});
           captured++;
+          updateProgress();
           captureFrame();
         };
       }
@@ -283,6 +316,7 @@
         const link = document.getElementById('downloadLink');
         link.href = url;
         link.style.display = 'inline-block';
+        progressContainer.style.display = 'none';
       });
 
       captureFrame();

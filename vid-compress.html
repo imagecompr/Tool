@@ -2,230 +2,274 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Tools Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Compress videos easily in your browser. Fast, secure, and free!">
+  <meta name="keywords" content="video compressor, compress video, online video editor">
+  <meta name="author" content="Your Name">
+  <title>Video Compressor Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    * {
+    body {
+      font-family: 'Poppins', sans-serif;
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #dfe9f3, #ffffff);
-      padding: 20px;
+      background: #f9f9f9;
       color: #333;
     }
-    .container {
-      max-width: 900px;
-      margin: auto;
+
+    header, footer {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      padding: 1rem 2rem;
       text-align: center;
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
     }
-    h1 {
-      margin-bottom: 30px;
-      font-size: 2rem;
-      color: #007bff;
+
+    header {
+      border-radius: 0 0 1rem 1rem;
     }
-    .options {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 20px;
+
+    footer {
+      border-radius: 1rem 1rem 0 0;
+      margin-top: 2rem;
     }
-    .option {
-      padding: 15px 20px;
-      background: #ffffff;
-      border: 2px solid #007bff;
-      border-radius: 30px;
+
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 2rem 0 2rem 0;
+      max-width: 600px;
+      margin: 2rem auto;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .upload-zone {
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      border-radius: 2rem 0 2rem 0;
+      background: #fefefe;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: background 0.3s ease;
+      text-align: center;
     }
-    .option.active, .option:hover {
-      background: #007bff;
-      color: #fff;
+
+    .upload-zone.dragover {
+      background: #d7fbe8;
     }
-    .drop-zone {
-      border: 2px dashed #007bff;
-      border-radius: 12px;
-      padding: 40px;
-      background: #f9f9f9;
-      transition: background 0.3s;
-      cursor: pointer;
+
+    input[type="file"] {
+      display: none;
     }
-    .drop-zone.hover {
-      background: #e3f2fd;
-    }
-    canvas {
-      margin-top: 20px;
+
+    video {
       max-width: 100%;
+      margin-top: 1rem;
+      border-radius: 1rem;
+      display: none;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input[type="text"], input[type="range"], select, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
       border: 1px solid #ccc;
-      border-radius: 10px;
+      border-radius: 0.75rem;
+      font-size: 1rem;
     }
-    .controls {
-      margin-top: 20px;
-    }
-    .controls button {
-      padding: 12px 24px;
-      margin: 10px;
-      background-color: #007bff;
+
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
       color: white;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s;
     }
-    .controls button:hover {
-      background-color: #0056b3;
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    #progress {
+      margin-top: 1rem;
+      height: 10px;
+      background: #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: #00b09b;
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      line-height: 10px;
+    }
+
+    #estimatedTime {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    a#downloadLink {
+      display: none;
+      margin-top: 1rem;
+      text-decoration: none;
+      color: #00b09b;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
     }
   </style>
 </head>
 <body>
+  <header>
+    <h1>Video Compressor Tool</h1>
+  </header>
+
   <div class="container">
-    <h1>Image Editor (Frontend Only)</h1>
-    <div class="options">
-      <div class="option" onclick="applyTool('grayscale')">Grayscale</div>
-      <div class="option" onclick="applyTool('blur')">Blur</div>
-      <div class="option" onclick="applyTool('enhance')">Enhance</div>
-      <div class="option" onclick="applyTool('invert')">Invert Colors</div>
+    <div class="upload-zone" id="dropZone">
+      <p>Drag & Drop your video here or click to upload</p>
+      <input type="file" id="videoInput" accept="video/*">
     </div>
-    <div class="drop-zone" id="dropZone">
-      <p>Drag & drop your image here or click to select</p>
-      <input type="file" accept="image/*" style="display:none" id="fileInput">
+
+    <video id="previewVideo" controls></video>
+
+    <label for="resolution">Choose Resolution</label>
+    <select id="resolution">
+      <option value="1280x720">720p</option>
+      <option value="854x480">480p</option>
+      <option value="640x360">360p</option>
+    </select>
+
+    <label for="format">Output Format</label>
+    <select id="format">
+      <option value="mp4">MP4</option>
+      <option value="webm">WebM</option>
+    </select>
+
+    <label for="crf">Compression Ratio (Lower = Better Quality)</label>
+    <input type="range" id="crf" min="18" max="35" value="28">
+
+    <button id="compressBtn">Compress Video</button>
+
+    <div id="progress">
+      <div id="progressBar"></div>
     </div>
-    <canvas id="canvas"></canvas>
-    <div class="controls">
-      <button onclick="chooseDownloadFormat()">Download</button>
-    </div>
+    <div id="estimatedTime">Estimated time remaining...</div>
+
+    <a id="downloadLink" download="compressed_video.mp4">Download Compressed Video</a>
   </div>
 
+  <footer>
+    <p>© 2025 Video Compressor Tool. All rights reserved.</p>
+  </footer>
+
   <script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
     const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext("2d");
-    let loadedImage = null;
+    const videoInput = document.getElementById('videoInput');
+    const previewVideo = document.getElementById('previewVideo');
+    const compressBtn = document.getElementById('compressBtn');
+    const downloadLink = document.getElementById('downloadLink');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const estimatedTime = document.getElementById('estimatedTime');
+    const resolution = document.getElementById('resolution');
+    const format = document.getElementById('format');
+    const crf = document.getElementById('crf');
 
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => {
-      if (e.target.files[0]) handleImage(e.target.files[0]);
-    });
-    dropZone.addEventListener('dragover', e => {
+    let videoFile;
+
+    dropZone.addEventListener('click', () => videoInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
-      dropZone.classList.add('hover');
+      dropZone.classList.add('dragover');
     });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
-    dropZone.addEventListener('drop', e => {
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      dropZone.classList.remove('hover');
-      if (e.dataTransfer.files[0]) handleImage(e.dataTransfer.files[0]);
+      dropZone.classList.remove('dragover');
+      videoFile = e.dataTransfer.files[0];
+      previewVideo.src = URL.createObjectURL(videoFile);
+      previewVideo.style.display = 'block';
     });
 
-    function handleImage(file) {
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          loadedImage = img;
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
+    videoInput.addEventListener('change', e => {
+      videoFile = e.target.files[0];
+      previewVideo.src = URL.createObjectURL(videoFile);
+      previewVideo.style.display = 'block';
+    });
 
-    function applyTool(tool) {
-      if (!loadedImage) return alert("Please upload an image first.");
+    compressBtn.addEventListener('click', async () => {
+      if (!videoFile) return alert('Please upload a video first.');
+      if (!ffmpeg.isLoaded()) await ffmpeg.load();
 
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      tempCtx.drawImage(canvas, 0, 0);
+      progress.style.display = 'block';
+      estimatedTime.style.display = 'block';
+      progressBar.style.width = '0%';
+      estimatedTime.textContent = 'Estimated time remaining...';
 
-      if (tool === 'grayscale') {
-        const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-        for (let i = 0; i < imgData.data.length; i += 4) {
-          const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
-          imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = avg;
-        }
-        tempCtx.putImageData(imgData, 0, 0);
-      }
+      const start = Date.now();
+      ffmpeg.setProgress(({ ratio }) => {
+        const percent = Math.min(100, ratio * 100);
+        progressBar.style.width = `${percent}%`;
+        const elapsed = (Date.now() - start) / 1000;
+        const estTotal = elapsed / ratio;
+        const remaining = Math.max(0, estTotal - elapsed);
+        estimatedTime.textContent = `Estimated time remaining: ${remaining.toFixed(1)}s`;
+      });
 
-      if (tool === 'blur') {
-        tempCtx.filter = 'blur(4px)';
-        tempCtx.drawImage(tempCanvas, 0, 0);
-        tempCtx.filter = 'none';
-      }
+      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(videoFile));
 
-      if (tool === 'enhance') {
-        tempCtx.filter = 'brightness(1.2) contrast(1.2)';
-        tempCtx.drawImage(tempCanvas, 0, 0);
-        tempCtx.filter = 'none';
-      }
+      const size = resolution.value;
+      const fmt = format.value;
+      const outputFile = `output.${fmt}`;
 
-      if (tool === 'invert') {
-        const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-        for (let i = 0; i < imgData.data.length; i += 4) {
-          imgData.data[i] = 255 - imgData.data[i];
-          imgData.data[i + 1] = 255 - imgData.data[i + 1];
-          imgData.data[i + 2] = 255 - imgData.data[i + 2];
-        }
-        tempCtx.putImageData(imgData, 0, 0);
-      }
+      await ffmpeg.run(
+        '-i', 'input.mp4',
+        '-vf', `scale=${size}`,
+        '-c:v', 'libx264',
+        '-crf', crf.value,
+        '-preset', 'ultrafast',
+        outputFile
+      );
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(tempCanvas, 0, 0);
-      notifyUser(`${tool.charAt(0).toUpperCase() + tool.slice(1)} applied successfully!`);
-    }
+      const data = ffmpeg.FS('readFile', outputFile);
 
-    function notifyUser(message) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(message);
-      } else if ("Notification" in window && Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") new Notification(message);
-        });
-      } else {
-        alert(message);
-      }
-    }
+      const url = URL.createObjectURL(new Blob([data.buffer], { type: `video/${fmt}` }));
+      downloadLink.href = url;
+      downloadLink.download = `compressed_video.${fmt}`;
+      downloadLink.style.display = 'inline-block';
+      previewVideo.src = url;
 
-    function chooseDownloadFormat() {
-      if (!loadedImage) return alert("Please upload and edit an image before downloading.");
-      const format = prompt("Enter download format: png or jpg").toLowerCase();
-      if (format === 'png' || format === 'jpg' || format === 'jpeg') {
-        downloadImage(format === 'jpg' ? 'jpeg' : format);
-      } else {
-        alert('Invalid format. Please enter png or jpg.');
-      }
-    }
-
-    function downloadImage(type) {
-      try {
-        const link = document.createElement('a');
-        link.download = `edited-image.${type}`;
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          link.href = url;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, `image/${type}`);
-      } catch (err) {
-        alert('Download failed. Please try again.');
-        console.error(err);
-      }
-    }
+      alert('✅ Video compressed successfully!');
+    });
   </script>
 </body>
 </html>
+

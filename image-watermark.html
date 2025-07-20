@@ -3,350 +3,143 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Image Watermark Tool</title>
-  <meta name="description" content="Add text or logo watermarks to images. Drag, resize, and place anywhere. Fully frontend." />
-  <meta name="keywords" content="Watermark Image, Add Logo, Text, Online Tool" />
-  <meta name="author" content="MyToolsWebsite" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <title>Image Watermark Tool</title>
+  <meta name="description" content="Add text or logo watermarks to images. Drag, resize, move, and download securely. Fully frontend-based and fast.">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Poppins', sans-serif;
       background: #f5f7fa;
-      color: #333;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       min-height: 100vh;
     }
     header, footer {
+      text-align: center;
+      padding: 1rem;
       background: linear-gradient(to right, #00b09b, #96c93d);
       color: white;
-      text-align: center;
-      padding: 1.5rem;
     }
-    header { border-radius: 0 0 12px 12px; }
-    footer { border-radius: 12px 12px 0 0; margin-top: auto; }
     main {
-      flex: 1;
-      max-width: 1000px;
+      max-width: 900px;
       margin: 2rem auto;
-      padding: 2rem;
-      background: #fff;
-      border-radius: 10px;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    canvas {
-      max-width: 100%;
+    input, button, select {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
       border: 1px solid #ccc;
-      margin: 1rem 0;
-      cursor: crosshair;
+      width: 100%;
     }
-    .controls, .layer-list {
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background: linear-gradient(to right, #019180, #85b338);
+    }
+    label { display: block; margin: 0.5rem 0 0.3rem; font-weight: 600; }
+    .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
       margin-bottom: 1rem;
     }
-    .controls > div, .layer-list > div {
+    .controls > div {
       flex: 1 1 180px;
     }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 0.3rem;
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    input[type="color"] { padding: 0; height: 42px; }
-    button {
-      background: linear-gradient(90deg, #00b09b, #96c93d);
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: linear-gradient(90deg, #019180, #85b338);
-    }
-    #dropArea {
+    #dropZone {
+      text-align: center;
       border: 2px dashed #ccc;
       padding: 1rem;
-      text-align: center;
       border-radius: 10px;
       margin-bottom: 1rem;
-      transition: 0.3s ease;
+      cursor: pointer;
     }
-    #dropArea.hovered {
-      border-color: #00b09b;
-      background: #e6fff9;
+    canvas {
+      max-width: 100%;
+      border: 1px solid #ccc;
+      margin: 1rem 0;
     }
     .status-message {
-      text-align: center;
       margin-top: 1rem;
+      text-align: center;
       font-weight: 600;
       color: #c0392b;
     }
-    .status-message.success { color: #27ae60; }
-    .position-buttons {
+    .status-message.success {
+      color: #27ae60;
+    }
+    .preset-buttons {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      margin: 1rem 0;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-<header><h1>Advanced Watermark Tool</h1></header>
-<main>
-  <div class="controls">
-    <div>
-      <label>Select Image</label>
-      <input type="file" id="imageUpload" accept="image/*" />
+  <header><h1>Image Watermark Tool</h1></header>
+  <main>
+    <div id="dropZone" onclick="document.getElementById('imageUpload').click()">
+      <strong>Click to Select Image</strong> or Drag & Drop Image Here
+      <input type="file" id="imageUpload" accept="image/*" style="display: none;" />
     </div>
-    <div>
-      <label>Add Logo</label>
-      <input type="file" id="logoUpload" accept="image/*" />
+
+    <div class="controls">
+      <div>
+        <label>Watermark Text</label>
+        <input type="text" id="watermarkText" placeholder="Enter watermark text">
+      </div>
+      <div>
+        <label>Font Size</label>
+        <input type="number" id="fontSize" value="32">
+      </div>
+      <div>
+        <label>Color</label>
+        <input type="color" id="fontColor" value="#000000">
+      </div>
+      <div>
+        <label>Opacity</label>
+        <input type="range" id="opacity" min="0" max="1" step="0.1" value="1">
+      </div>
     </div>
-    <div>
-      <label>Watermark Text</label>
-      <input type="text" id="watermarkText" placeholder="Enter text" />
+
+    <button onclick="addWatermark()">Add Watermark</button>
+
+    <div class="preset-buttons">
+      <button onclick="setPosition('top-left')">Top Left</button>
+      <button onclick="setPosition('top-right')">Top Right</button>
+      <button onclick="setPosition('bottom-left')">Bottom Left</button>
+      <button onclick="setPosition('bottom-right')">Bottom Right</button>
+      <button onclick="setPosition('center')">Center</button>
     </div>
-    <div>
-      <label>Font Size</label>
-      <input type="number" id="fontSize" value="32" />
-    </div>
-    <div>
-      <label>Color</label>
-      <input type="color" id="fontColor" value="#000000" />
-    </div>
-    <div>
-      <label>Opacity</label>
-      <input type="range" id="opacity" min="0" max="1" step="0.1" value="1" />
-    </div>
-  </div>
 
-  <div id="dropArea">Or drag & drop an image here</div>
+    <canvas id="previewCanvas"></canvas>
 
-  <button onclick="addTextWatermark()">Add Text Watermark</button>
+    <button onclick="downloadImage()">Download Image</button>
+    <div id="status" class="status-message"></div>
+  </main>
+  <footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
 
-  <div class="position-buttons">
-    <button onclick="setPosition('top-left')">Top Left</button>
-    <button onclick="setPosition('top-right')">Top Right</button>
-    <button onclick="setPosition('bottom-left')">Bottom Left</button>
-    <button onclick="setPosition('bottom-right')">Bottom Right</button>
-    <button onclick="setPosition('center')">Center</button>
-  </div>
+  <script>
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    const dropZone = document.getElementById('dropZone');
+    const imageUpload = document.getElementById('imageUpload');
+    const statusMsg = document.getElementById('status');
 
-  <canvas id="previewCanvas"></canvas>
-  <button onclick="downloadImage()">Download Final Image</button>
+    let baseImage = null;
+    const layers = [];
 
-  <div class="status-message" id="status"></div>
-  <div class="layer-list" id="layerList"></div>
-</main>
-<footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
-
-<script>
-  const canvas = document.getElementById('previewCanvas');
-  const ctx = canvas.getContext('2d');
-  const statusMsg = document.getElementById('status');
-  const layerList = document.getElementById('layerList');
-  let baseImage = null;
-
-  const layers = [];
-
-  function renderCanvas() {
-    if (!baseImage) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(baseImage, 0, 0);
-    layers.forEach(layer => {
-      ctx.globalAlpha = layer.opacity;
-      if (layer.type === 'text') {
-        ctx.fillStyle = layer.color;
-        ctx.font = `${layer.size}px Poppins`;
-        ctx.fillText(layer.text, layer.x, layer.y);
-      } else if (layer.type === 'image' && layer.img) {
-        ctx.drawImage(layer.img, layer.x, layer.y, layer.width, layer.height);
-      }
-    });
-    ctx.globalAlpha = 1;
-    updateLayerList();
-  }
-
-  function addTextWatermark() {
-    if (!baseImage) return showStatus("Upload an image first");
-    const text = document.getElementById('watermarkText').value;
-    const size = parseInt(document.getElementById('fontSize').value);
-    const color = document.getElementById('fontColor').value;
-    const opacity = parseFloat(document.getElementById('opacity').value);
-    if (!text) return showStatus("Enter watermark text");
-
-    const layer = { type: 'text', text, size, color, opacity, x: 50, y: 50 };
-    layers.push(layer);
-    renderCanvas();
-    showStatus("Text watermark added", true);
-  }
-
-  document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
-  function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        baseImage = img;
-        canvas.width = img.width;
-        canvas.height = img.height;
-        renderCanvas();
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  document.getElementById('logoUpload').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const layer = {
-          type: 'image',
-          img,
-          x: 50,
-          y: 50,
-          width: 100,
-          height: 100,
-          opacity: parseFloat(document.getElementById('opacity').value)
-        };
-        layers.push(layer);
-        renderCanvas();
-        showStatus("Logo added", true);
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  canvas.addEventListener('click', e => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    if (layers.length > 0) {
-      layers[layers.length - 1].x = x;
-      layers[layers.length - 1].y = y;
-      renderCanvas();
-    }
-  });
-
-  function setPosition(position) {
-    if (!baseImage || layers.length === 0) return showStatus("Add a watermark first");
-    const layer = layers[layers.length - 1]; // Most recent layer
-    const margin = 20;
-
-    if (layer.type === 'text') {
-      ctx.font = `${layer.size}px Poppins`;
-      const textWidth = ctx.measureText(layer.text).width;
-      const textHeight = layer.size;
-
-      switch (position) {
-        case 'top-left':
-          layer.x = margin;
-          layer.y = margin + textHeight;
-          break;
-        case 'top-right':
-          layer.x = canvas.width - textWidth - margin;
-          layer.y = margin + textHeight;
-          break;
-        case 'bottom-left':
-          layer.x = margin;
-          layer.y = canvas.height - margin;
-          break;
-        case 'bottom-right':
-          layer.x = canvas.width - textWidth - margin;
-          layer.y = canvas.height - margin;
-          break;
-        case 'center':
-          layer.x = (canvas.width - textWidth) / 2;
-          layer.y = (canvas.height + textHeight) / 2;
-          break;
-      }
-
-    } else if (layer.type === 'image') {
-      const w = layer.width;
-      const h = layer.height;
-
-      switch (position) {
-        case 'top-left':
-          layer.x = margin;
-          layer.y = margin;
-          break;
-        case 'top-right':
-          layer.x = canvas.width - w - margin;
-          layer.y = margin;
-          break;
-        case 'bottom-left':
-          layer.x = margin;
-          layer.y = canvas.height - h - margin;
-          break;
-        case 'bottom-right':
-          layer.x = canvas.width - w - margin;
-          layer.y = canvas.height - h - margin;
-          break;
-        case 'center':
-          layer.x = (canvas.width - w) / 2;
-          layer.y = (canvas.height - h) / 2;
-          break;
-      }
-    }
-
-    renderCanvas();
-    showStatus(`Watermark moved to ${position.replace('-', ' ')}`, true);
-  }
-
-  function downloadImage() {
-    if (!baseImage) return showStatus("Upload an image first");
-    const link = document.createElement('a');
-    link.download = 'watermarked-image.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showStatus("Download started", true);
-  }
-
-  function updateLayerList() {
-    layerList.innerHTML = layers.map((layer, i) =>
-      `<div>Layer ${i + 1}: ${layer.type === 'text' ? `"${layer.text}"` : 'Logo'} <button onclick="removeLayer(${i})">🗑️ Remove</button></div>`
-    ).join('');
-  }
-
-  function removeLayer(index) {
-    layers.splice(index, 1);
-    renderCanvas();
-    showStatus("Layer removed", true);
-  }
-
-  function showStatus(msg, success = false) {
-    statusMsg.textContent = msg;
-    statusMsg.className = 'status-message' + (success ? ' success' : '');
-  }
-
-  const dropArea = document.getElementById('dropArea');
-  ['dragenter', 'dragover'].forEach(evt => dropArea.addEventListener(evt, e => {
-    e.preventDefault();
-    dropArea.classList.add('hovered');
-  }));
-  ['dragleave', 'drop'].forEach(evt => dropArea.addEventListener(evt, e => {
-    e.preventDefault();
-    dropArea.classList.remove('hovered');
-  }));
-  dropArea.addEventListener('drop', e => {
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    // Load image
+    function loadImage(file) {
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
@@ -354,13 +147,100 @@
           baseImage = img;
           canvas.width = img.width;
           canvas.height = img.height;
-          renderCanvas();
+          drawCanvas();
         };
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
-  });
-</script>
+
+    imageUpload.addEventListener('change', () => {
+      if (imageUpload.files.length > 0) loadImage(imageUpload.files[0]);
+    });
+
+    // Drag & Drop
+    ['dragenter', 'dragover'].forEach(event => {
+      dropZone.addEventListener(event, e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#00b09b';
+      });
+    });
+    ['dragleave', 'drop'].forEach(event => {
+      dropZone.addEventListener(event, e => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+      });
+    });
+    dropZone.addEventListener('drop', e => {
+      if (e.dataTransfer.files.length > 0) loadImage(e.dataTransfer.files[0]);
+    });
+
+    function addWatermark() {
+      const text = document.getElementById('watermarkText').value;
+      const size = parseInt(document.getElementById('fontSize').value);
+      const color = document.getElementById('fontColor').value;
+      const opacity = parseFloat(document.getElementById('opacity').value);
+
+      if (!text || !baseImage) return showStatus('Please select an image and enter watermark text.');
+
+      const x = 50;
+      const y = 50 + size;
+
+      layers.push({ type: 'text', text, size, color, opacity, x, y });
+      drawCanvas();
+      showStatus('Watermark added.', true);
+    }
+
+    function setPosition(pos) {
+      if (!baseImage || layers.length === 0) return showStatus("Add a watermark first");
+      const layer = layers[layers.length - 1];
+      const margin = 20;
+
+      if (layer.type === 'text') {
+        ctx.font = `${layer.size}px Poppins`;
+        const w = ctx.measureText(layer.text).width;
+        const h = layer.size;
+
+        switch (pos) {
+          case 'top-left': layer.x = margin; layer.y = margin + h; break;
+          case 'top-right': layer.x = canvas.width - w - margin; layer.y = margin + h; break;
+          case 'bottom-left': layer.x = margin; layer.y = canvas.height - margin; break;
+          case 'bottom-right': layer.x = canvas.width - w - margin; layer.y = canvas.height - margin; break;
+          case 'center': layer.x = (canvas.width - w) / 2; layer.y = (canvas.height + h) / 2; break;
+        }
+      }
+
+      drawCanvas();
+      showStatus(`Watermark moved to ${pos.replace('-', ' ')}`, true);
+    }
+
+    function drawCanvas() {
+      if (!baseImage) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseImage, 0, 0);
+      layers.forEach(layer => {
+        if (layer.type === 'text') {
+          ctx.globalAlpha = layer.opacity;
+          ctx.fillStyle = layer.color;
+          ctx.font = `${layer.size}px Poppins`;
+          ctx.fillText(layer.text, layer.x, layer.y);
+        }
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'watermarked-image.png';
+      link.href = canvas.toDataURL();
+      link.click();
+      showStatus("Image downloaded successfully!", true);
+    }
+
+    function showStatus(msg, success = false) {
+      statusMsg.textContent = msg;
+      statusMsg.className = 'status-message' + (success ? ' success' : '');
+    }
+  </script>
 </body>
 </html>

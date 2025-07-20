@@ -80,6 +80,12 @@
       border: 1px solid #ccc;
     }
 
+    #fileInfo {
+      margin-bottom: 1rem;
+      color: #2e7d32;
+      font-weight: 500;
+    }
+
     button.split {
       padding: 0.7em 2em;
       background: linear-gradient(to right, #00b09b, #96c93d);
@@ -133,6 +139,7 @@
       <p>Drag & Drop PDF here or click to upload</p>
       <input type="file" id="pdfInput" accept="application/pdf" hidden />
     </div>
+    <div id="fileInfo"></div>
 
     <div class="controls">
       <label>
@@ -158,6 +165,7 @@
   <script>
     const uploadZone = document.getElementById('uploadZone');
     const pdfInput = document.getElementById('pdfInput');
+    const fileInfo = document.getElementById('fileInfo');
 
     uploadZone.addEventListener('click', () => pdfInput.click());
     uploadZone.addEventListener('dragover', (e) => {
@@ -169,7 +177,18 @@
       e.preventDefault();
       uploadZone.classList.remove('dragover');
       pdfInput.files = e.dataTransfer.files;
+      showFileName(pdfInput.files[0]);
     });
+
+    pdfInput.addEventListener('change', () => {
+      if (pdfInput.files.length > 0) {
+        showFileName(pdfInput.files[0]);
+      }
+    });
+
+    function showFileName(file) {
+      fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} <br><small>Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>`;
+    }
 
     async function splitPDF() {
       const file = pdfInput.files[0];
@@ -190,6 +209,8 @@
 
         const totalSteps = ranges.split(',').length;
         let completed = 0;
+        const downloadSection = document.getElementById('downloadSection');
+        downloadSection.innerHTML = '';
 
         for (let part of ranges.split(',')) {
           let [start, end] = part.split('-').map(x => parseInt(x));
@@ -208,10 +229,12 @@
           const link = document.createElement('a');
           link.href = url;
           link.download = `split-${start}-${end}.pdf`;
-          link.textContent = `Download split ${start}-${end}`;
+          link.textContent = `✅ Download split ${start}-${end}`;
           link.style.display = 'block';
           link.style.marginTop = '1rem';
-          document.getElementById('downloadSection').appendChild(link);
+          link.style.fontWeight = '600';
+          link.style.color = '#00b09b';
+          downloadSection.appendChild(link);
 
           completed++;
           const percent = Math.round((completed / totalSteps) * 100);

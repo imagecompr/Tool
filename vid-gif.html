@@ -14,7 +14,6 @@
       font-family: 'Poppins', sans-serif;
       margin: 0;
       padding: 0;
-      background: #f9f9f9;
       color: #333;
     }
 
@@ -30,12 +29,10 @@
     }
 
     .container {
-      background: white;
       padding: 2rem;
       border-radius: 16px;
       max-width: 600px;
       margin: 2rem auto;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
 
     .upload-zone {
@@ -233,7 +230,6 @@
       const url = URL.createObjectURL(file);
       videoPreview.src = url;
       videoPreview.style.display = 'block';
-
       gifPreview.style.display = 'none';
       downloadLink.style.display = 'none';
     }
@@ -244,17 +240,11 @@
         return;
       }
 
-      let fps = parseInt(document.getElementById('fps').value);
-      if (fps > 24) fps = 24;
-      if (fps < 1 || isNaN(fps)) fps = 1;
-
-      let quality = parseInt(document.getElementById('quality').value);
-      if (quality > 31) quality = 31;
-      if (quality < 1 || isNaN(quality)) quality = 5;
-
-      const startTime = document.getElementById('startTime').value;
-      const duration = document.getElementById('duration').value;
-      const width = document.getElementById('width').value;
+      let fps = Math.max(1, Math.min(24, parseInt(document.getElementById('fps').value) || 10));
+      let quality = Math.max(1, Math.min(31, parseInt(document.getElementById('quality').value) || 5));
+      const startTime = document.getElementById('startTime').value || "0";
+      const duration = document.getElementById('duration').value || "3";
+      const width = document.getElementById('width').value || "320";
 
       convertBtn.disabled = true;
       progress.style.display = 'block';
@@ -262,36 +252,49 @@
       progressBar.innerText = 'Loading...';
 
       const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: true });
+      const ffmpeg = createFFmpeg({
+        log: true,
+        progress: ({ ratio }) => {
+          const percent = Math.round(ratio * 100);
+          progressBar.style.width = percent + "%";
+          progressBar.innerText = percent + "%";
+        }
+      });
 
-      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+      try {
+        if (!ffmpeg.isLoaded()) await ffmpeg.load();
 
-      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(uploadedFile));
+        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(uploadedFile));
+        const outputName = 'output.gif';
+        const filters = `fps=${fps},scale=${width}:-1:flags=lanczos`;
 
-      const outputName = 'output.gif';
-      const filters = `fps=${fps},scale=${width}:-1:flags=lanczos`;
+        await ffmpeg.run(
+          '-ss', startTime,
+          '-t', duration,
+          '-i', 'input.mp4',
+          '-vf', filters,
+          '-q:v', quality.toString(),
+          outputName
+        );
 
-      const args = [
-        '-ss', startTime,
-        '-t', duration,
-        '-i', 'input.mp4',
-        '-vf', filters,
-        '-loop', '0',
-        outputName
-      ];
+        const data = ffmpeg.FS('readFile', outputName);
+        const blob = new Blob([data.buffer], { type: 'image/gif' });
+        const gifURL = URL.createObjectURL(blob);
 
-      await ffmpeg.run(...args);
-      const data = ffmpeg.FS('readFile', outputName);
-      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
+        gifPreview.src = gifURL;
+        gifPreview.style.display = 'block';
+        downloadLink.href = gifURL;
+        downloadLink.style.display = 'inline-block';
 
-      gifPreview.src = url;
-      gifPreview.style.display = 'block';
-      downloadLink.href = url;
-      downloadLink.style.display = 'inline-block';
-
-      progressBar.style.width = '100%';
-      progressBar.innerText = 'Done!';
-      convertBtn.disabled = false;
+        progressBar.style.width = '100%';
+        progressBar.innerText = 'Done!';
+      } catch (err) {
+        alert('Error during conversion. Try again.');
+        console.error(err);
+        progressBar.innerText = 'Error!';
+      } finally {
+        convertBtn.disabled = false;
+      }
     });
   </script>
 </body>

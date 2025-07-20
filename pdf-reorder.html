@@ -1,0 +1,333 @@
+<!-- Start of PDF Page Reorder Tool -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Page Reorder Tool - MyToolsWebsite</title>
+  <meta name="description" content="Reorder, rotate, and delete pages of your PDF online. Fully frontend-only, fast, and secure." />
+  <meta name="keywords" content="PDF Reorder Pages, Rearrange PDF, Rotate PDF, Delete PDF Pages, Online PDF Tool, Free PDF Editor" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header, footer {
+      width: 100%;
+      text-align: center;
+      padding: 1em 0;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+    }
+
+    header {
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+    }
+
+    footer {
+      border-top-left-radius: 40px;
+      border-top-right-radius: 40px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .tool-container {
+      max-width: 1000px;
+      margin: 2rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      width: 95%;
+    }
+
+    .upload-zone {
+      border: 2px dashed #ccc;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      transition: background 0.3s ease;
+      cursor: pointer;
+    }
+
+    .upload-zone.dragover {
+      background: #e3f2fd;
+    }
+
+    .file-info {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .page-thumbnails {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 1rem;
+      min-height: 120px;
+    }
+
+    .page-thumb {
+      width: 80px;
+      height: 120px;
+      border: 1px solid #aaa;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      background: #f9f9f9;
+      cursor: move;
+      border-radius: 8px;
+      user-select: none;
+      padding: 5px;
+      position: relative;
+    }
+
+    .rotate-btn, .delete-btn {
+      position: absolute;
+      font-size: 0.7rem;
+      padding: 2px 5px;
+      border: none;
+      border-radius: 6px;
+      background: #96c93d;
+      color: white;
+      cursor: pointer;
+    }
+
+    .rotate-btn {
+      bottom: 4px;
+      right: 4px;
+    }
+
+    .delete-btn {
+      top: 4px;
+      right: 4px;
+      background: #e74c3c;
+    }
+
+    .progress {
+      margin-top: 1rem;
+      width: 100%;
+      background: #eee;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 20px;
+      width: 0%;
+      background: #00b09b;
+      color: white;
+      line-height: 20px;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    button {
+      padding: 0.7em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: linear-gradient(to right, #96c93d, #00b09b);
+    }
+
+    .download-link {
+      display: none;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .tool-container {
+        margin: 1rem;
+        padding: 1rem;
+      }
+
+      .page-thumb {
+        width: 60px;
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PDF Page Reorder Tool</h1>
+  </header>
+
+  <div class="tool-container">
+    <div class="upload-zone" id="uploadZone">
+      <p>Drag & Drop PDF here or click to upload</p>
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+    </div>
+
+    <div class="file-info" id="fileInfo"></div>
+    <div class="page-thumbnails" id="pageThumbnails"></div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <button onclick="reorderPDF()">Reorder & Download</button>
+    <a id="downloadLink" class="download-link" download="reordered.pdf">Download PDF</a>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const pdfInput = document.getElementById('pdfInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const thumbnails = document.getElementById('pageThumbnails');
+    let loadedPdf, originalPdfBytes;
+
+    uploadZone.addEventListener('click', () => pdfInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      pdfInput.files = e.dataTransfer.files;
+      loadPDF();
+    });
+    pdfInput.addEventListener('change', loadPDF);
+
+    async function loadPDF() {
+      const file = pdfInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function () {
+        originalPdfBytes = new Uint8Array(reader.result);
+
+        if (!window.pdfjsLib) {
+          window.pdfjsLib = window['pdfjs-dist/build/pdf'];
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        }
+
+        loadedPdf = await window.pdfjsLib.getDocument({ data: originalPdfBytes }).promise;
+
+        fileInfo.textContent = `${file.name} - ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        thumbnails.innerHTML = '';
+
+        for (let i = 1; i <= loadedPdf.numPages; i++) {
+          const div = document.createElement('div');
+          div.className = 'page-thumb';
+          div.draggable = true;
+          div.textContent = `Page ${i}`;
+          div.dataset.page = i - 1;
+          div.dataset.rotate = 0;
+
+          const rotateBtn = document.createElement('button');
+          rotateBtn.className = 'rotate-btn';
+          rotateBtn.textContent = '↻';
+          rotateBtn.onclick = () => {
+            const current = parseInt(div.dataset.rotate);
+            const newAngle = (current + 90) % 360;
+            div.dataset.rotate = newAngle;
+            div.style.transform = `rotate(${newAngle}deg)`;
+          };
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.textContent = '×';
+          deleteBtn.onclick = () => div.remove();
+
+          div.appendChild(deleteBtn);
+          div.appendChild(rotateBtn);
+          thumbnails.appendChild(div);
+        }
+
+        initDragAndDrop();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function initDragAndDrop() {
+      let dragged;
+      thumbnails.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('page-thumb')) {
+          dragged = e.target;
+        }
+      });
+      thumbnails.addEventListener('dragover', (e) => e.preventDefault());
+      thumbnails.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.target.classList.contains('page-thumb')) {
+          thumbnails.insertBefore(dragged, e.target.nextSibling);
+        }
+      });
+    }
+
+    async function reorderPDF() {
+      if (!loadedPdf) return alert("Please upload a PDF file first.");
+
+      const progressBar = document.getElementById('progressBar');
+      const progress = document.getElementById('progress');
+      progress.style.display = 'block';
+      progressBar.style.width = '10%';
+      progressBar.textContent = 'Processing...';
+
+      const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
+      const newPdf = await PDFLib.PDFDocument.create();
+      const order = [...thumbnails.children];
+
+      for (let i = 0; i < order.length; i++) {
+        const pageIndex = parseInt(order[i].dataset.page);
+        const rotation = parseInt(order[i].dataset.rotate);
+        const [page] = await newPdf.copyPages(pdfDoc, [pageIndex]);
+        page.setRotation(PDFLib.degrees(rotation));
+        newPdf.addPage(page);
+
+        const percent = Math.round(((i + 1) / order.length) * 100);
+        progressBar.style.width = percent + '%';
+        progressBar.textContent = percent + '%';
+      }
+
+      const pdfBytes = await newPdf.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.getElementById('downloadLink');
+      link.href = url;
+      link.style.display = 'inline-block';
+      progressBar.textContent = 'Done';
+    }
+  </script>
+</body>
+</html>
+<!-- End of PDF Page Reorder Tool -->
+
+

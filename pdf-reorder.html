@@ -72,7 +72,13 @@
     .file-info {
       margin-top: 1rem;
       font-size: 0.9rem;
-      color: #333;
+      color: #2e7d32;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    .file-info.visible {
+      opacity: 1;
     }
 
     .page-thumbnails {
@@ -219,8 +225,11 @@
     uploadZone.addEventListener('drop', (e) => {
       e.preventDefault();
       uploadZone.classList.remove('dragover');
-      pdfInput.files = e.dataTransfer.files;
-      loadPDF();
+
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      pdfInput.files = dt.files;
+      pdfInput.dispatchEvent(new Event('change'));
     });
     pdfInput.addEventListener('change', loadPDF);
 
@@ -239,7 +248,8 @@
 
         loadedPdf = await window.pdfjsLib.getDocument({ data: originalPdfBytes }).promise;
 
-        fileInfo.textContent = `${file.name} - ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} <br><small>Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>`;
+        fileInfo.classList.add('visible');
         thumbnails.innerHTML = '';
 
         for (let i = 1; i <= loadedPdf.numPages; i++) {
@@ -270,24 +280,32 @@
           thumbnails.appendChild(div);
         }
 
+        thumbnails.scrollIntoView({ behavior: "smooth" });
         initDragAndDrop();
       };
       reader.readAsArrayBuffer(file);
     }
 
     function initDragAndDrop() {
-      let dragged;
+      let draggedEl;
+
       thumbnails.addEventListener('dragstart', (e) => {
         if (e.target.classList.contains('page-thumb')) {
-          dragged = e.target;
+          draggedEl = e.target;
+          e.dataTransfer.effectAllowed = 'move';
         }
       });
-      thumbnails.addEventListener('dragover', (e) => e.preventDefault());
-      thumbnails.addEventListener('drop', (e) => {
+
+      thumbnails.addEventListener('dragover', (e) => {
         e.preventDefault();
-        if (e.target.classList.contains('page-thumb')) {
-          thumbnails.insertBefore(dragged, e.target.nextSibling);
-        }
+        const target = e.target.closest('.page-thumb');
+        if (!target || target === draggedEl) return;
+
+        const bounding = target.getBoundingClientRect();
+        const offset = bounding.y + bounding.height / 2;
+        const insertBefore = e.clientY < offset;
+
+        thumbnails.insertBefore(draggedEl, insertBefore ? target : target.nextSibling);
       });
     }
 
@@ -329,5 +347,3 @@
 </body>
 </html>
 <!-- End of PDF Page Reorder Tool -->
-
-

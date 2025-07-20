@@ -47,6 +47,7 @@
       cursor: pointer;
       transition: background 0.3s ease;
       position: relative;
+      text-align: center;
     }
 
     .upload-zone.dragover {
@@ -89,6 +90,7 @@
       margin: 0.25rem 0 0.5rem;
       border: 1px solid #ccc;
       border-radius: 8px;
+      box-sizing: border-box;
     }
 
     button {
@@ -101,15 +103,21 @@
       cursor: pointer;
       transition: background 0.3s ease;
       margin-top: 1rem;
+      width: 100%;
     }
 
     button:hover {
       background: #009688;
     }
+    
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
 
     #progress {
       margin-top: 1rem;
-      height: 10px;
+      height: 20px;
       background: #ddd;
       border-radius: 8px;
       overflow: hidden;
@@ -123,7 +131,8 @@
       text-align: center;
       color: white;
       font-size: 12px;
-      line-height: 10px;
+      line-height: 20px;
+      transition: width 0.2s ease-in-out;
     }
 
     a#downloadLink {
@@ -133,6 +142,9 @@
       color: #00b09b;
       font-weight: bold;
       display: inline-block;
+      padding: 0.5rem 1rem;
+      border: 1px solid #00b09b;
+      border-radius: 8px;
     }
 
     @media (max-width: 600px) {
@@ -164,13 +176,10 @@
       <input type="number" id="duration" placeholder="e.g. 3" value="3" min="1" max="60" />
 
       <label for="fps">Frames Per Second (FPS)</label>
-      <input type="number" id="fps" placeholder="Max 24" value="10" min="1" max="24" />
+      <input type="number" id="fps" placeholder="Max 30" value="12" min="1" max="30" />
 
       <label for="width">Width (pixels)</label>
-      <input type="number" id="width" placeholder="e.g. 320" value="320" min="1" max="1920" />
-
-      <label for="quality">GIF Quality (1–31, lower = better)</label>
-      <input type="number" id="quality" placeholder="e.g. 5" value="5" min="1" max="31" />
+      <input type="number" id="width" placeholder="e.g. 480" value="480" min="1" max="1920" />
 
       <button id="convertBtn">Convert to GIF</button>
     </div>
@@ -244,54 +253,104 @@
         return;
       }
 
-      let fps = parseInt(document.getElementById('fps').value);
-      if (fps > 24) fps = 24;
-      if (fps < 1 || isNaN(fps)) fps = 1;
-
-      let quality = parseInt(document.getElementById('quality').value);
-      if (quality > 31) quality = 31;
-      if (quality < 1 || isNaN(quality)) quality = 5;
-
       const startTime = document.getElementById('startTime').value;
       const duration = document.getElementById('duration').value;
+      const fps = document.getElementById('fps').value;
       const width = document.getElementById('width').value;
+
+      if (!startTime || !duration || !fps || !width || isNaN(parseFloat(startTime)) || isNaN(parseFloat(duration)) || isNaN(parseInt(fps)) || isNaN(parseInt(width))) {
+        alert('Please ensure all fields have valid numbers.');
+        return;
+      }
 
       convertBtn.disabled = true;
       progress.style.display = 'block';
       progressBar.style.width = '0%';
-      progressBar.innerText = 'Loading...';
+      progressBar.style.backgroundColor = '#00b09b';
+      progressBar.innerText = 'Starting...';
+      gifPreview.style.display = 'none';
+      downloadLink.style.display = 'none';
 
-      const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: true });
+      let currentPass = 1;
 
-      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+      try {
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({
+            log: true,
+            progress: ({ ratio }) => {
+                let progressRatio = 0;
+                let message = '';
 
-      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(uploadedFile));
+                if (currentPass === 1) {
+                    message = 'Pass 1/2: Analyzing colors...';
+                    progressRatio = ratio * 0.4;
+                } else {
+                    message = 'Pass 2/2: Building GIF...';
+                    progressRatio = 0.4 + (ratio * 0.6);
+                }
+                
+                if (progressRatio > 1) progressRatio = 1;
 
-      const outputName = 'output.gif';
-      const filters = `fps=${fps},scale=${width}:-1:flags=lanczos`;
+                progressBar.style.width = `${progressRatio * 100}%`;
+                progressBar.innerText = `${message} ${Math.round(progressRatio * 100)}%`;
+            },
+        });
 
-      const args = [
-        '-ss', startTime,
-        '-t', duration,
-        '-i', 'input.mp4',
-        '-vf', filters,
-        '-loop', '0',
-        outputName
-      ];
+        progressBar.innerText = 'Loading FFmpeg core...';
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
 
-      await ffmpeg.run(...args);
-      const data = ffmpeg.FS('readFile', outputName);
-      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
+        const inputFileName = 'input' + uploadedFile.name.substring(uploadedFile.name.lastIndexOf('.'));
+        ffmpeg.FS('writeFile', inputFileName, await fetchFile(uploadedFile));
+        
+        // PASS 1: Generate a palette for high-quality output
+        progressBar.innerText = 'Pass 1/2: Analyzing colors...';
+        const paletteName = 'palette.png';
+        const palettegenFilters = `fps=${fps},scale=${width}:-1:flags=lanczos,palettegen`;
+        await ffmpeg.run(
+            '-ss', startTime,
+            '-t', duration,
+            '-i', inputFileName,
+            '-vf', palettegenFilters,
+            paletteName
+        );
 
-      gifPreview.src = url;
-      gifPreview.style.display = 'block';
-      downloadLink.href = url;
-      downloadLink.style.display = 'inline-block';
+        // PASS 2: Create the GIF using the generated palette
+        currentPass = 2;
+        progressBar.innerText = 'Pass 2/2: Building GIF...';
+        const outputName = 'output.gif';
+        const paletteuseFilters = `fps=${fps},scale=${width}:-1:flags=lanczos [x]; [x][1:v] paletteuse`;
+        await ffmpeg.run(
+            '-ss', startTime,
+            '-t', duration,
+            '-i', inputFileName,
+            '-i', paletteName,
+            '-lavfi', paletteuseFilters,
+            '-loop', '0',
+            outputName
+        );
 
-      progressBar.style.width = '100%';
-      progressBar.innerText = 'Done!';
-      convertBtn.disabled = false;
+        const data = ffmpeg.FS('readFile', outputName);
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
+
+        gifPreview.src = url;
+        gifPreview.style.display = 'block';
+        downloadLink.href = url;
+        downloadLink.style.display = 'inline-block';
+        
+        progressBar.style.width = '100%';
+        progressBar.innerText = 'Conversion Complete!';
+
+    } catch (error) {
+        console.error(error);
+        progressBar.style.width = '100%';
+        progressBar.style.backgroundColor = '#d9534f';
+        progressBar.innerText = 'Error! Check console for details.';
+        alert('An error occurred during conversion. Please check your video file and settings.');
+    } finally {
+        convertBtn.disabled = false;
+    }
     });
   </script>
 </body>

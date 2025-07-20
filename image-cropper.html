@@ -21,21 +21,15 @@
       min-height: 100vh;
     }
 
-    header {
+    header, footer {
       background: linear-gradient(to right, #00b09b, #96c93d);
       color: white;
       text-align: center;
       padding: 1.5rem;
-      border-radius: 0 0 12px 12px;
     }
 
-    footer {
-      background: linear-gradient(to right, #00b09b, #96c93d);
-      color: white;
-      text-align: center;
-      padding: 1.5rem;
-      border-radius: 12px 12px 0 0;
-    }
+    header { border-radius: 0 0 12px 12px; }
+    footer { border-radius: 12px 12px 0 0; }
 
     main {
       flex: 1;
@@ -47,17 +41,9 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    h2 {
+    h2, .description {
       text-align: center;
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-
-    p.description {
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto 2rem;
-      color: #555;
+      margin-bottom: 1.5rem;
     }
 
     #drop-area {
@@ -66,7 +52,6 @@
       border-radius: 10px;
       text-align: center;
       margin-bottom: 2rem;
-      cursor: pointer;
       background: #f9fdfc;
       transition: all 0.3s;
     }
@@ -76,9 +61,7 @@
       background-color: #e0f7f7;
     }
 
-    input[type="file"] {
-      display: none;
-    }
+    input[type="file"] { display: none; }
 
     button {
       padding: 12px 20px;
@@ -89,7 +72,6 @@
       border-radius: 6px;
       cursor: pointer;
       transition: background 0.3s;
-      display: inline-block;
       margin-top: 1rem;
     }
 
@@ -106,6 +88,7 @@
 
     #image-container img {
       max-width: 100%;
+      max-height: 400px;
     }
 
     .status-message {
@@ -146,28 +129,31 @@
       background: #3e8e41;
     }
 
-    #image.circle-mask {
-      border-radius: 50%;
-      overflow: hidden;
-    }
-
-    @media (max-width: 600px) {
-      #image-container {
-        max-height: 300px;
-      }
-    }
+    .circle-mask { border-radius: 50%; }
+    .oval-mask { border-radius: 50% / 30%; }
+    .portrait-mask { border-radius: 15% / 25%; }
+    .landscape-mask { border-radius: 8px; }
 
     .form-controls {
       text-align: center;
       margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
     }
 
-    .form-controls select {
+    .form-controls select, .form-controls input {
       padding: 10px;
-      margin: 0 10px 10px;
       border-radius: 6px;
       font-size: 1rem;
       border: 1px solid #ccc;
+      width: 160px;
+    }
+
+    @media (max-width: 600px) {
+      #image-container { max-height: 300px; }
+      .form-controls { flex-direction: column; }
     }
   </style>
 </head>
@@ -186,25 +172,34 @@
   </div>
 
   <form class="form-controls" onsubmit="return false;">
-    <label for="aspectRatio"><strong>Aspect Ratio:</strong></label>
     <select id="aspectRatio">
       <option value="NaN">Free</option>
       <option value="1">1:1</option>
       <option value="16/9">16:9</option>
       <option value="4/3">4:3</option>
+      <option value="3/2">3:2</option>
+      <option value="2/3">2:3</option>
+      <option value="9/16">9:16</option>
+      <option value="5/4">5:4</option>
+      <option value="21/9">21:9</option>
     </select>
 
-    <label for="shape"><strong>Crop Shape:</strong></label>
     <select id="shape">
       <option value="square">Square</option>
       <option value="circle">Circle</option>
+      <option value="landscape">Landscape</option>
+      <option value="portrait">Portrait</option>
+      <option value="oval">Oval</option>
     </select>
 
-    <label for="downloadFormat"><strong>Download Format:</strong></label>
     <select id="downloadFormat">
       <option value="png">PNG</option>
       <option value="jpeg">JPEG</option>
+      <option value="webp">WEBP</option>
     </select>
+
+    <input type="number" id="customWidth" placeholder="Width (px)" min="10" />
+    <input type="number" id="customHeight" placeholder="Height (px)" min="10" />
   </form>
 
   <div id="image-container">
@@ -235,8 +230,10 @@
   const aspectRatioSelect = document.getElementById('aspectRatio');
   const shapeSelect = document.getElementById('shape');
   const formatSelect = document.getElementById('downloadFormat');
+  const widthInput = document.getElementById('customWidth');
+  const heightInput = document.getElementById('customHeight');
 
-  let cropper;
+  let cropper = null;
 
   fileBtn.onclick = () => imageInput.click();
 
@@ -245,26 +242,26 @@
     statusMsg.className = 'status-message' + (success ? ' success' : '');
   }
 
-  dropArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropArea.classList.add('hover');
-  });
+  function initializeCropper() {
+    if (cropper) cropper.destroy();
 
-  dropArea.addEventListener('dragleave', () => {
-    dropArea.classList.remove('hover');
-  });
+    cropper = new Cropper(imageEl, {
+      viewMode: 1,
+      autoCropArea: 0.9,
+      responsive: true,
+      dragMode: 'crop',
+      movable: true,
+      zoomable: true,
+      scalable: false,
+      cropBoxResizable: true,
+      ready() {
+        updateAspectRatio();
+        updateShape();
+      }
+    });
 
-  dropArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropArea.classList.remove('hover');
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
-  });
-
-  imageInput.addEventListener('change', () => {
-    const file = imageInput.files[0];
-    handleFile(file);
-  });
+    cropBtn.style.display = 'inline-block';
+  }
 
   function handleFile(file) {
     if (!file || !file.type.startsWith('image/')) {
@@ -278,37 +275,57 @@
       imageEl.style.display = 'block';
       resultDiv.innerHTML = '';
       showStatus('');
-      if (cropper) cropper.destroy();
-      cropper = new Cropper(imageEl, {
-        aspectRatio: NaN,
-        viewMode: 1,
-        autoCropArea: 0.8,
-        responsive: true
-      });
-      cropBtn.style.display = 'inline-block';
+      imageEl.onload = initializeCropper;
     };
     reader.readAsDataURL(file);
   }
 
-  aspectRatioSelect.addEventListener('change', () => {
-    if (cropper) {
-      const ratio = eval(aspectRatioSelect.value);
-      cropper.setAspectRatio(isNaN(ratio) ? NaN : ratio);
-    }
+  function updateAspectRatio() {
+    if (!cropper) return;
+    const ratio = eval(aspectRatioSelect.value);
+    cropper.setAspectRatio(isNaN(ratio) ? NaN : ratio);
+  }
+
+  function updateShape() {
+    const shape = shapeSelect.value;
+    imageEl.className = '';
+    if (shape === 'circle') imageEl.classList.add('circle-mask');
+    else if (shape === 'landscape') imageEl.classList.add('landscape-mask');
+    else if (shape === 'portrait') imageEl.classList.add('portrait-mask');
+    else if (shape === 'oval') imageEl.classList.add('oval-mask');
+  }
+
+  dropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropArea.classList.add('hover');
   });
 
-  shapeSelect.addEventListener('change', () => {
-    const shape = shapeSelect.value;
-    imageEl.classList.toggle('circle-mask', shape === 'circle');
+  dropArea.addEventListener('dragleave', () => dropArea.classList.remove('hover'));
+  dropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropArea.classList.remove('hover');
+    handleFile(e.dataTransfer.files[0]);
   });
+
+  imageInput.addEventListener('change', () => handleFile(imageInput.files[0]));
+  aspectRatioSelect.addEventListener('change', updateAspectRatio);
+  shapeSelect.addEventListener('change', updateShape);
 
   cropBtn.addEventListener('click', () => {
     if (!cropper) return;
 
     const format = formatSelect.value.toLowerCase();
     const mime = 'image/' + format;
-    const fileExtension = format === 'jpeg' ? 'jpg' : 'png';
-    const canvas = cropper.getCroppedCanvas();
+    const ext = format === 'jpeg' ? 'jpg' : format;
+
+    let canvas = cropper.getCroppedCanvas();
+
+    const customWidth = parseInt(widthInput.value);
+    const customHeight = parseInt(heightInput.value);
+
+    if (customWidth && customHeight) {
+      canvas = cropper.getCroppedCanvas({ width: customWidth, height: customHeight });
+    }
 
     if (!canvas) {
       showStatus('Crop failed. Try again.');
@@ -316,12 +333,11 @@
     }
 
     const dataUrl = canvas.toDataURL(mime);
-
     resultDiv.innerHTML = `
       <h3>Cropped Image (${format.toUpperCase()})</h3>
       <img src="${dataUrl}" alt="Cropped Image" />
       <br />
-      <a href="${dataUrl}" download="cropped-image.${fileExtension}">Download Cropped Image</a>
+      <a href="${dataUrl}" download="cropped-image.${ext}">Download Cropped Image</a>
     `;
     showStatus('Image cropped successfully!', true);
   });

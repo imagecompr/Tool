@@ -130,6 +130,7 @@
     .download-link {
       display: none;
       margin-top: 1rem;
+      font-weight: 600;
     }
 
     @media (max-width: 768px) {
@@ -193,7 +194,7 @@
     </div>
 
     <button onclick="processPDF()">Apply & Download</button>
-    <a id="downloadLink" class="download-link" download="signed.pdf">Download PDF</a>
+    <a id="downloadLink" class="download-link" download="signed.pdf"></a>
   </div>
 
   <footer>
@@ -328,10 +329,15 @@
       const link = document.getElementById('downloadLink');
       link.href = url;
       link.style.display = 'inline-block';
-      link.click();
+      link.textContent = "Click here to download your PDF";
+
+      if (link.dataset.prevUrl) {
+        URL.revokeObjectURL(link.dataset.prevUrl);
+      }
+      link.dataset.prevUrl = url;
+
       progressBar.style.width = '100%';
       progressBar.textContent = 'Done';
-      alert('Download started!');
     }
   </script>
 </body>

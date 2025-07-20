@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Add watermark to videos easily in your browser. Fast, secure, and free!">
+  <meta name="keywords" content="video watermark, add logo to video, online video editor">
+  <meta name="author" content="Your Name">
+  <title>Video Watermark Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    header, footer {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+
+    header {
+      border-radius: 0 0 1rem 1rem;
+    }
+
+    footer {
+      border-radius: 1rem 1rem 0 0;
+      margin-top: 2rem;
+    }
+
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 2rem 0 2rem 0;
+      max-width: 600px;
+      margin: 2rem auto;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .upload-zone {
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      border-radius: 2rem 0 2rem 0;
+      background: #fefefe;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      text-align: center;
+    }
+
+    .upload-zone.dragover {
+      background: #d7fbe8;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    video {
+      max-width: 100%;
+      margin-top: 1rem;
+      border-radius: 1rem;
+      display: none;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input[type="text"], input[type="file"], input[type="range"], select, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+    }
+
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    #progress {
+      margin-top: 1rem;
+      height: 10px;
+      background: #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background: #00b09b;
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      line-height: 10px;
+    }
+
+    a#downloadLink {
+      display: none;
+      margin-top: 1rem;
+      text-decoration: none;
+      color: #00b09b;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    #watermarkImagePreview {
+      max-width: 100px;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Video Watermark Tool</h1>
+  </header>
+
+  <div class="container">
+    <label for="videoInput">Upload Video</label>
+    <input type="file" id="videoInput" accept="video/*">
+
+    <label for="imageInput">Upload Watermark Image</label>
+    <input type="file" id="imageInput" accept="image/*">
+    <img id="watermarkImagePreview" />
+
+    <label for="opacitySlider">Watermark Opacity</label>
+    <input type="range" id="opacitySlider" min="0" max="100" value="100">
+
+    <label for="sizeSlider">Watermark Size (%)</label>
+    <input type="range" id="sizeSlider" min="10" max="100" value="30">
+
+    <button id="addWatermarkBtn">Add Watermark</button>
+
+    <div id="progress">
+      <div id="progressBar"></div>
+    </div>
+
+    <a id="downloadLink" download="watermarked_video.mp4">Download Watermarked Video</a>
+
+    <video id="previewVideo" controls></video>
+  </div>
+
+  <footer>
+    <p>© 2025 Video Watermark Tool. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    const videoInput = document.getElementById('videoInput');
+    const imageInput = document.getElementById('imageInput');
+    const opacitySlider = document.getElementById('opacitySlider');
+    const sizeSlider = document.getElementById('sizeSlider');
+    const addWatermarkBtn = document.getElementById('addWatermarkBtn');
+    const downloadLink = document.getElementById('downloadLink');
+    const previewVideo = document.getElementById('previewVideo');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const watermarkPreview = document.getElementById('watermarkImagePreview');
+
+    let videoFile, watermarkFile;
+
+    videoInput.addEventListener('change', e => {
+      videoFile = e.target.files[0];
+      previewVideo.src = URL.createObjectURL(videoFile);
+      previewVideo.style.display = 'block';
+    });
+
+    imageInput.addEventListener('change', e => {
+      watermarkFile = e.target.files[0];
+      watermarkPreview.src = URL.createObjectURL(watermarkFile);
+    });
+
+    addWatermarkBtn.addEventListener('click', async () => {
+      if (!videoFile || !watermarkFile) {
+        alert('Please upload both video and watermark image.');
+        return;
+      }
+
+      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+      progress.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      ffmpeg.setProgress(({ ratio }) => {
+        progressBar.style.width = `${Math.min(100, ratio * 100)}%`;
+      });
+
+      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(videoFile));
+      ffmpeg.FS('writeFile', 'logo.png', await fetchFile(watermarkFile));
+
+      const opacity = opacitySlider.value / 100;
+      const scale = sizeSlider.value / 100;
+
+      const filter = `movie=logo.png [watermark]; [in][watermark] overlay=W-w-10:H-h-10:format=auto:alpha=${opacity} [out]`;
+
+      await ffmpeg.run(
+        '-i', 'input.mp4',
+        '-i', 'logo.png',
+        '-filter_complex', `[1:v]scale=iw*${scale}:ih*${scale}[wm];[0:v][wm]overlay=W-w-10:H-h-10`,
+        '-codec:a', 'copy',
+        'output.mp4'
+      );
+
+      const data = ffmpeg.FS('readFile', 'output.mp4');
+
+      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+      previewVideo.src = url;
+      alert('✅ Watermark added successfully!');
+    });
+  </script>
+</body>
+</html>

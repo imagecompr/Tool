@@ -1,145 +1,596 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF Protector & Unlocker</title>
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image to PDF Converter</title>
+  <meta name="description" content="Convert multiple images into a single PDF directly in your browser. No upload or backend required." />
+  <meta name="keywords" content="image to pdf, online pdf converter, browser pdf generator, frontend only" />
+  
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
     body {
-      background: linear-gradient(to right, #667eea, #764ba2);
+      font-family: 'Poppins', sans-serif;
+      background-color: #f7f9fb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+      color: #333;
     }
-    .card {
-      background: white;
-      border-radius: 1rem;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    header {
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: white;
       padding: 2rem;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0,176,155,0.3);
+      user-select: none;
+      font-weight: 600;
+      font-size: 1.8rem;
+      border-radius: 0 0 12px 12px;
+      flex-shrink: 0;
     }
-    .btn {
-      transition: transform 0.2s ease;
+    main {
+      flex: 1;
+      max-width: 700px;
+      margin: 2rem auto 3rem;
+      padding: 2rem 2.5rem;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+      text-align: center;
+      user-select: none;
     }
-    .btn:hover {
-      transform: scale(1.05);
+    h1, h2 {
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+    }
+    h2 {
+      color: #444;
+    }
+
+    #drop-area {
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      border-radius: 10px;
+      background: #f9fdfc;
+      cursor: pointer;
+      margin: 1rem 0 1.5rem;
+      transition: background 0.3s ease, border-color 0.3s ease;
+      user-select: none;
+    }
+    #drop-area.hover {
+      background: #e0f7f7;
+      border-color: #019180;
+    }
+    #drop-area p {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #333;
+      user-select: none;
+    }
+    #drop-area input[type="file"] {
+      display: none;
+    }
+
+    button {
+      padding: 0.85rem 2rem;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      box-shadow: 0 4px 15px rgba(0,176,155,0.35);
+      user-select: none;
+      transition: background 0.3s ease, transform 0.2s ease;
+      min-width: 200px;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(90deg, #019180, #85b338);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0,176,155,0.45);
+    }
+    button:disabled {
+      background: #b0b0b0;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+
+    #progressContainer {
+      width: 100%;
+      background-color: #ddd;
+      border-radius: 12px;
+      margin-top: 1.5rem;
+      height: 24px;
+      overflow: hidden;
+      display: none;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+      user-select: none;
+    }
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      border-radius: 12px 0 0 12px;
+      transition: width 0.3s ease-out;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 1.5rem;
+      text-decoration: none;
+      font-weight: 600;
+      color: #00b09b;
+      font-size: 1.1rem;
+      user-select: none;
+      transition: color 0.3s ease;
+    }
+    #downloadLink:hover {
+      color: #019180;
+      text-decoration: underline;
+    }
+
+    #status {
+      margin-top: 1.5rem;
+      font-weight: 600;
+      font-size: 1rem;
+      min-height: 26px;
+      user-select: none;
+      transition: color 0.3s ease;
+    }
+    #status.success {
+      color: #27ae60;
+    }
+    #status.error {
+      color: #c0392b;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem 1rem;
+      background: linear-gradient(90deg, #00b09b, #96c93d);
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      user-select: none;
+      box-shadow: 0 -6px 20px rgba(0,176,155,0.3);
+      border-radius: 12px 12px 0 0;
+      flex-shrink: 0;
+    }
+
+    /* Form controls container */
+    .options-container {
+      margin-bottom: 1.5rem;
+      text-align: left;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      user-select: none;
+    }
+    .options-container label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #333;
+    }
+    .options-container select,
+    .options-container input[type="text"],
+    .options-container input[type="number"] {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      margin-bottom: 1rem;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
+    }
+    .options-container select:focus,
+    .options-container input[type="text"]:focus,
+    .options-container input[type="number"]:focus {
+      border-color: #00b09b;
+      outline: none;
+    }
+    .options-container .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      user-select: none;
+    }
+    .options-container .checkbox-group input[type="checkbox"] {
+      margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      main {
+        margin: 1.5rem 1rem 3rem;
+        padding: 1.5rem 1.5rem;
+      }
+      button {
+        width: 100%;
+        min-width: unset;
+      }
+      #drop-area {
+        padding: 1.5rem;
+      }
+      .options-container {
+        max-width: 100%;
+      }
     }
   </style>
+
+  <!-- Load pdf-lib -->
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-  <div class="card w-full max-w-2xl">
-    <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">PDF Protector & Unlocker</h1><!-- Notifications -->
-<div id="notification" class="hidden mb-4 p-3 rounded text-white text-center"></div>
+<body>
+  <header>
+    Image to PDF Converter
+  </header>
 
-<!-- Protect PDF -->
-<div class="mb-10">
-  <h2 class="text-xl font-semibold mb-2 text-gray-700">Protect PDF</h2>
-  <input type="file" id="protectInput" accept="application/pdf" class="mb-2 block w-full" />
-  <input type="password" id="protectPassword" placeholder="Enter password" class="mb-2 p-2 border rounded w-full" />
-  <button onclick="protectPDF()" class="btn bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">Protect & Download</button>
-</div>
+  <main>
+    <h2>Select or Drag Images</h2>
+    <p>This tool converts multiple images into a single PDF. No uploads.</p>
 
-<!-- Unlock PDF -->
-<div>
-  <h2 class="text-xl font-semibold mb-2 text-gray-700">Unlock PDF</h2>
-  <input type="file" id="unlockInput" accept="application/pdf" class="mb-2 block w-full" />
-  <input type="password" id="unlockPassword" placeholder="Enter password" class="mb-2 p-2 border rounded w-full" />
-  <button onclick="unlockPDF()" class="btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">Unlock & Download</button>
-</div>
+    <div id="drop-area" tabindex="0" role="button" aria-label="Select or drag images here">
+      <p>Drag & Drop images here or click to select</p>
+      <input type="file" id="imageInput" accept="image/*" multiple />
+    </div>
 
-  </div>  <script>
-    async function protectPDF() {
-      const input = document.getElementById('protectInput');
-      const password = document.getElementById('protectPassword').value;
-      if (!input.files[0] || !password) {
-        showNotification('Please select a PDF and enter a password', 'red');
+    <div class="options-container" aria-label="PDF conversion options">
+      <label for="pageSize">Page Size (optional)</label>
+      <select id="pageSize" aria-describedby="pageSizeDesc">
+        <option value="">Auto (image size)</option>
+        <option value="A4">A4 (210 x 297 mm)</option>
+        <option value="Letter">Letter (8.5 x 11 inches)</option>
+        <option value="Legal">Legal (8.5 x 14 inches)</option>
+        <option value="Custom">Custom (enter width & height below)</option>
+      </select>
+      <small id="pageSizeDesc" style="color:#666; font-size:0.85rem;">
+        Select page size, or leave empty for auto image size.
+      </small>
+
+      <label for="orientation">Orientation (optional)</label>
+      <select id="orientation">
+        <option value="portrait">Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+
+      <div id="customDimensions" style="display:none;">
+        <label for="customWidth">Custom Width (points)</label>
+        <input type="number" id="customWidth" min="100" max="2000" placeholder="e.g. 595 (A4 width)" />
+        <label for="customHeight">Custom Height (points)</label>
+        <input type="number" id="customHeight" min="100" max="2000" placeholder="e.g. 842 (A4 height)" />
+        <small style="color:#666; font-size:0.85rem;">Dimensions in PDF points (1 pt ≈ 1/72 inch)</small>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="pageNumbers" />
+        <label for="pageNumbers">Add Page Numbers (optional)</label>
+      </div>
+
+      <label for="headerText">Header Text (optional)</label>
+      <input type="text" id="headerText" placeholder="Enter header text" />
+
+      <label for="footerText">Footer Text (optional)</label>
+      <input type="text" id="footerText" placeholder="Enter footer text" />
+    </div>
+
+    <button id="convertBtn" type="button">Convert to PDF</button>
+
+    <div id="progressContainer" aria-live="polite" aria-atomic="true" aria-relevant="all">
+      <div id="progressBar"></div>
+    </div>
+
+    <div id="status" role="alert" aria-live="assertive"></div>
+    <a id="downloadLink" href="#" download="images.pdf" aria-label="Download generated PDF">⬇ Download PDF</a>
+  </main>
+
+  <footer>
+    © 2025 My Tools Website
+  </footer>
+
+  <script>
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+
+    const dropArea = document.getElementById('drop-area');
+    const input = document.getElementById('imageInput');
+    const btn = document.getElementById('convertBtn');
+    const statusDiv = document.getElementById('status');
+    const downloadLink = document.getElementById('downloadLink');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const pageSizeSelect = document.getElementById('pageSize');
+    const orientationSelect = document.getElementById('orientation');
+    const customDimensionsDiv = document.getElementById('customDimensions');
+    const customWidthInput = document.getElementById('customWidth');
+    const customHeightInput = document.getElementById('customHeight');
+    const pageNumbersCheckbox = document.getElementById('pageNumbers');
+    const headerInput = document.getElementById('headerText');
+    const footerInput = document.getElementById('footerText');
+
+    // Show/hide custom dimensions inputs based on page size selection
+    pageSizeSelect.addEventListener('change', () => {
+      if (pageSizeSelect.value === 'Custom') {
+        customDimensionsDiv.style.display = 'block';
+      } else {
+        customDimensionsDiv.style.display = 'none';
+        customWidthInput.value = '';
+        customHeightInput.value = '';
+      }
+    });
+
+    // Allow clicking drop-area to open file picker
+    dropArea.addEventListener('click', () => input.click());
+
+    // Accessibility: allow keyboard "Enter" or "Space" to open file picker
+    dropArea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        input.click();
+      }
+    });
+
+    // Drag-and-drop events
+    ['dragenter', 'dragover'].forEach(event => {
+      dropArea.addEventListener(event, e => {
+        e.preventDefault();
+        dropArea.classList.add('hover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(event => {
+      dropArea.addEventListener(event, e => {
+        e.preventDefault();
+        dropArea.classList.remove('hover');
+      });
+    });
+
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault();
+      const dt = e.dataTransfer;
+      if (dt.files && dt.files.length > 0) {
+        handleFiles(dt.files);
+      }
+    });
+
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length > 0) {
+        handleFiles(input.files);
+      }
+    });
+
+    let selectedFiles = [];
+
+    function handleFiles(files) {
+      // Filter images only and store in selectedFiles
+      const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      if (imageFiles.length === 0) {
+        showStatus('No valid image files selected.', 'error');
         return;
       }
+      selectedFiles = imageFiles;
+      showStatus(`${selectedFiles.length} image(s) ready for conversion.`, 'success');
+      downloadLink.style.display = 'none';
+    }
+
+    btn.addEventListener('click', async () => {
+      if (selectedFiles.length === 0) {
+        showStatus('Please select at least one image file.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      showStatus('');
+      downloadLink.style.display = 'none';
+      progressBar.style.width = '0%';
+      progressContainer.style.display = 'block';
 
       try {
-        const arrayBuffer = await input.files[0].arrayBuffer();
-        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+        await createPdf(selectedFiles);
+      } catch (err) {
+        showStatus('Error creating PDF: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        progressContainer.style.display = 'none';
+      }
+    });
 
-        // Recreate PDF with encryption simulation (not standard PDF encryption)
-        const newPdfDoc = await PDFLib.PDFDocument.create();
-        const copiedPages = await newPdfDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
-        copiedPages.forEach((page) => newPdfDoc.addPage(page));
+    async function createPdf(files) {
+      const pdfDoc = await PDFDocument.create();
 
-        newPdfDoc.setTitle("Protected PDF");
-        newPdfDoc.setSubject("Encrypted PDF");
+      // Prepare fonts and options
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontSize = 10;
+      const headerFontSize = 12;
+      const footerFontSize = 10;
 
-        const pdfBytes = await newPdfDoc.save({
-          updateFieldAppearances: true,
-          useObjectStreams: false,
-          encrypt: {
-            userPassword: password,
-            ownerPassword: password,
-            permissions: {
-              printing: 'none',
-              modifying: false,
-              copying: false,
-              annotating: false
-            }
+      const addPageNumbers = pageNumbersCheckbox.checked;
+      const headerText = headerInput.value.trim();
+      const footerText = footerInput.value.trim();
+
+      // Determine page size in points (1 pt = 1/72 inch)
+      // Default A4 = 595 x 842 points (portrait)
+      let pageWidth, pageHeight;
+
+      const pageSizeOption = pageSizeSelect.value;
+      const orientation = orientationSelect.value;
+
+      // Sizes in points for convenience
+      const sizes = {
+        A4: { width: 595, height: 842 },
+        Letter: { width: 612, height: 792 },
+        Legal: { width: 612, height: 1008 }
+      };
+
+      // If custom selected, get from inputs
+      if (pageSizeOption === 'Custom') {
+        const w = parseInt(customWidthInput.value, 10);
+        const h = parseInt(customHeightInput.value, 10);
+        if (!w || !h || w < 100 || h < 100) {
+          showStatus('Please enter valid custom width and height (>=100 points).', 'error');
+          return;
+        }
+        pageWidth = w;
+        pageHeight = h;
+      } else if (sizes[pageSizeOption]) {
+        pageWidth = sizes[pageSizeOption].width;
+        pageHeight = sizes[pageSizeOption].height;
+      }
+
+      // We'll handle each page individually if auto sizing
+      // Otherwise page size is fixed
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        // Read image as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+
+        // Detect image type for pdf-lib embedding
+        let image;
+        let imgDims = {};
+
+        // We embed images differently depending on type
+        if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+          image = await pdfDoc.embedJpg(arrayBuffer);
+          imgDims = image.scale(1);
+        } else if (file.type === 'image/png') {
+          image = await pdfDoc.embedPng(arrayBuffer);
+          imgDims = image.scale(1);
+        } else {
+          // fallback: treat as png
+          image = await pdfDoc.embedPng(arrayBuffer);
+          imgDims = image.scale(1);
+        }
+
+        // Determine page dimensions
+        let pw, ph;
+
+        if (!pageWidth || !pageHeight) {
+          // Auto page size - use image size + some margin
+          pw = imgDims.width + 20;
+          ph = imgDims.height + 60; // leave space for header/footer/page number
+          if (orientation === 'landscape' && ph > pw) {
+            [pw, ph] = [ph, pw];
           }
+        } else {
+          // Fixed page size
+          if (orientation === 'portrait') {
+            pw = pageWidth;
+            ph = pageHeight;
+          } else {
+            pw = pageHeight;
+            ph = pageWidth;
+          }
+        }
+
+        const page = pdfDoc.addPage([pw, ph]);
+
+        // Draw header text
+        if (headerText) {
+          page.drawText(headerText, {
+            x: 30,
+            y: ph - headerFontSize - 10,
+            size: headerFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        // Draw footer text
+        if (footerText) {
+          page.drawText(footerText, {
+            x: 30,
+            y: 20,
+            size: footerFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        // Draw page number
+        if (addPageNumbers) {
+          const pageNumText = `Page ${i + 1} of ${files.length}`;
+          const textWidth = font.widthOfTextAtSize(pageNumText, fontSize);
+          page.drawText(pageNumText, {
+            x: pw - textWidth - 30,
+            y: 20,
+            size: fontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
+
+        // Calculate image dimensions to fit page with margin
+        const margin = 30;
+        const maxWidth = pw - margin * 2;
+        const maxHeight = ph - margin * 3 - (headerText ? headerFontSize + 10 : 0) - (footerText || addPageNumbers ? footerFontSize + 20 : 0);
+
+        let imgWidth = imgDims.width;
+        let imgHeight = imgDims.height;
+
+        // Scale image to fit inside maxWidth/maxHeight
+        const widthScale = maxWidth / imgWidth;
+        const heightScale = maxHeight / imgHeight;
+        const scale = Math.min(widthScale, heightScale, 1);
+
+        imgWidth = imgWidth * scale;
+        imgHeight = imgHeight * scale;
+
+        const x = (pw - imgWidth) / 2;
+        let y = (ph - imgHeight) / 2;
+
+        // Adjust y if header/footer present
+        if (headerText) {
+          y = Math.min(y, ph - imgHeight - margin - headerFontSize - 10);
+        }
+        if (footerText || addPageNumbers) {
+          y = Math.max(y, margin + footerFontSize + 20);
+        }
+
+        // Draw image centered
+        page.drawImage(image, {
+          x,
+          y,
+          width: imgWidth,
+          height: imgHeight,
         });
 
-        download(pdfBytes, 'protected.pdf');
-        showNotification('PDF protected and downloaded successfully.', 'green');
-      } catch (error) {
-        console.error(error);
-        showNotification('Protection failed: This tool uses browser-side simulation only.', 'red');
-      }
-    }
-
-    async function unlockPDF() {
-      const input = document.getElementById('unlockInput');
-      const password = document.getElementById('unlockPassword').value;
-      if (!input.files[0] || !password) {
-        showNotification('Please select a PDF and enter the password', 'red');
-        return;
+        // Update progress
+        const percent = Math.round(((i + 1) / files.length) * 100);
+        progressBar.style.width = percent + '%';
+        progressBar.setAttribute('aria-valuenow', percent);
+        progressBar.setAttribute('aria-valuemin', 0);
+        progressBar.setAttribute('aria-valuemax', 100);
       }
 
-      try {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            const loadingTask = pdfjsLib.getDocument({ data: reader.result, password });
-            const pdf = await loadingTask.promise;
+      const pdfBytes = await pdfDoc.save();
 
-            const newPdfDoc = await PDFLib.PDFDocument.create();
-            for (let i = 0; i < pdf.numPages; i++) {
-              const originalDoc = await PDFLib.PDFDocument.load(reader.result);
-              const [copiedPage] = await newPdfDoc.copyPages(originalDoc, [i]);
-              newPdfDoc.addPage(copiedPage);
-            }
+      // Create download link blob
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
 
-            const unlockedBytes = await newPdfDoc.save();
-            download(unlockedBytes, 'unlocked.pdf');
-            showNotification('PDF unlocked and downloaded successfully.', 'green');
-          } catch (e) {
-            console.error(e);
-            showNotification('Incorrect password or unsupported file.', 'red');
-          }
-        };
-        reader.readAsArrayBuffer(input.files[0]);
-      } catch (err) {
-        console.error(err);
-        showNotification('Unlock failed.', 'red');
+      downloadLink.href = url;
+      downloadLink.style.display = 'inline-block';
+
+      showStatus('PDF created successfully!', 'success');
+    }
+
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = '';
+      if (type === 'error') {
+        statusDiv.classList.add('error');
+      } else if (type === 'success') {
+        statusDiv.classList.add('success');
       }
     }
-
-    function download(bytes, filename) {
-      const blob = new Blob([bytes], { type: 'application/pdf' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      link.click();
-    }
-
-    function showNotification(message, color) {
-      const notification = document.getElementById('notification');
-      notification.textContent = message;
-      notification.className = `mb-4 p-3 rounded text-white text-center bg-${color}-500`;
-      notification.classList.remove('hidden');
-      setTimeout(() => notification.classList.add('hidden'), 5000);
-    }
-  </script></body>
+  </script>
+</body>
 </html>

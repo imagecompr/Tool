@@ -9,33 +9,36 @@
   <meta name="keywords" content="Video to GIF, Online GIF Maker, MP4 to GIF, Free GIF Tool, Quality GIF Converter" />
   <meta name="author" content="MyToolsWebsite" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
       font-family: 'Poppins', sans-serif;
       margin: 0;
       padding: 0;
-      background: #f4f6fa;
+      background: #f2f2f2;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
     }
 
     header, footer {
       width: 100%;
       text-align: center;
       padding: 1em 0;
-      background: linear-gradient(to right, #4CAF50, #2E7D32);
       color: white;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      backdrop-filter: blur(8px);
     }
 
     header {
-      border-bottom-left-radius: 30px;
-      border-bottom-right-radius: 30px;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
     }
 
     footer {
-      border-top-left-radius: 30px;
-      border-top-right-radius: 30px;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      margin-top: auto;
     }
 
     h1 {
@@ -44,34 +47,35 @@
     }
 
     .tool-container {
-      max-width: 1000px;
-      margin: 2rem;
-      padding: 1rem;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 0 25px rgba(0,0,0,0.1);
+      max-width: 850px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(6px);
+      text-align: center;
     }
 
     .upload-zone {
-      border: 2px dashed #aaa;
+      border: 2px dashed #00b09b;
       padding: 2rem;
-      text-align: center;
-      margin-bottom: 1rem;
-      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      border-radius: 16px;
+      background: #fefefe;
       transition: background 0.3s ease, transform 0.2s ease;
       cursor: pointer;
     }
 
     .upload-zone.dragover {
-      background: #e0f7fa;
+      background: #d7fbe8;
       transform: scale(1.02);
     }
 
     video {
-      max-width: 100%;
       margin: 1rem 0;
       border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
     }
 
     .controls {
@@ -86,55 +90,66 @@
       display: flex;
       flex-direction: column;
       font-size: 0.9rem;
-      background: #f0f0f0;
-      padding: 0.8em;
-      border-radius: 12px;
-      box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+      background: #f9f9f9;
+      padding: 1em;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
       min-width: 140px;
     }
 
     .controls input,
     .controls select {
       margin-top: 0.3em;
-      padding: 0.4em;
-      border-radius: 6px;
+      padding: 0.5em;
+      border-radius: 8px;
       border: 1px solid #ccc;
+      font-size: 0.95rem;
+    }
+
+    .controls input#fps::after {
+      content: " (1–24 FPS)";
+      font-size: 0.8rem;
+      color: #888;
     }
 
     button.convert {
-      padding: 0.6em 1.5em;
-      background: #4CAF50;
+      padding: 0.8em 2em;
+      background: linear-gradient(to right, #00b09b, #96c93d);
       color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 16px;
       cursor: pointer;
       font-weight: 600;
-      transition: background 0.3s ease, transform 0.2s ease;
+      font-size: 1rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
     }
 
     button.convert:hover {
-      background: #388E3C;
-      transform: scale(1.05);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
     }
 
     #gifPreview {
       max-width: 100%;
-      margin-top: 1rem;
+      margin-top: 1.5rem;
       border-radius: 10px;
     }
 
     #downloadLink {
       display: inline-block;
-      margin-top: 0.5rem;
-      background: #2E7D32;
+      margin-top: 1rem;
+      background: #00b09b;
       color: white;
-      padding: 0.5em 1em;
-      border-radius: 6px;
+      padding: 0.6em 1.2em;
+      border-radius: 10px;
       text-decoration: none;
+      font-weight: 500;
+      transition: background 0.3s ease;
     }
 
     #downloadLink:hover {
-      background: #1B5E20;
+      background: #01897f;
     }
 
     .progress {
@@ -149,11 +164,25 @@
     .progress-bar {
       height: 20px;
       width: 0%;
-      background: #4CAF50;
+      background: #00b09b;
       text-align: center;
       color: white;
       line-height: 20px;
       font-size: 0.8rem;
+    }
+
+    #dimensions {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #333;
+      text-align: center;
+    }
+
+    #dimensionHelper {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: -1rem;
+      margin-bottom: 1rem;
     }
 
     @media (max-width: 768px) {
@@ -166,162 +195,46 @@
 </head>
 <body>
   <header>
-    <h1>Video to GIF Converter</h1>
+    <h1>🎥 Video to GIF Converter</h1>
   </header>
-
   <main class="tool-container">
-    <div class="upload-zone" id="drop-zone">
-      <p>Drag & Drop Video Here or Click to Upload</p>
+    <div class="upload-zone" id="uploadZone">
+      <p>Drag & drop your video here or click to browse</p>
       <input type="file" id="videoInput" accept="video/*" hidden />
     </div>
-
-    <video id="videoPreview" controls style="display:none;"></video>
-
+    <video id="videoPreview" controls style="display: none; max-width: 100%;"></video>
+    <div id="dimensions"></div>
     <div class="controls">
-      <label>
-        Frame Rate (fps)
-        <input type="range" id="frameRate" min="1" max="60" value="15" />
-        <span id="frameRateValue">15</span>
+      <label>Start Time (sec)
+        <input type="number" id="startTime" min="0" value="0">
       </label>
-      <label>
-        Width (px)
-        <input type="number" id="gifWidth" min="100" max="1000" value="320" />
+      <label>Duration (sec)
+        <input type="number" id="duration" min="1" value="5">
       </label>
-      <label>
-        Height (px)
-        <input type="number" id="gifHeight" min="100" max="1000" value="240" />
+      <label>Frame Rate (fps)
+        <input type="number" id="fps" min="1" max="24" value="10">
+        <small style="font-size: 0.75rem; color: #888">(1–24 FPS only)</small>
       </label>
-      <label>
-        Quality
-        <select id="gifQuality">
-          <option value="1">Best</option>
-          <option value="5">High</option>
-          <option value="10" selected>Medium</option>
-          <option value="20">Low</option>
+      <label>Width (px)
+        <input type="number" id="width" value="320">
+      </label>
+      <label>Quality
+        <select id="quality">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
         </select>
       </label>
     </div>
-
-    <div style="text-align:center;">
-      <button class="convert" onclick="convertToGif()">Convert to GIF</button>
-    </div>
-
-    <div class="progress">
+    <button class="convert" id="convertBtn">Convert to GIF</button>
+    <div class="progress" id="progress">
       <div class="progress-bar" id="progressBar">0%</div>
     </div>
-
-    <div id="gifResult" style="text-align:center;">
-      <img id="gifPreview" />
-      <br />
-      <a id="downloadLink" download="converted.gif" style="display:none;">Download GIF</a>
-    </div>
+    <img id="gifPreview" style="display:none;">
+    <a id="downloadLink" href="#" download="converted.gif" style="display:none;">Download GIF</a>
   </main>
-
   <footer>
-    <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
+    <p>&copy; 2025 MyToolsWebsite - Fast and Free Video to GIF Converter</p>
   </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.min.js"></script>
-  <script>
-    const dropZone = document.getElementById('drop-zone');
-    const videoInput = document.getElementById('videoInput');
-    const videoPreview = document.getElementById('videoPreview');
-    const frameRateInput = document.getElementById('frameRate');
-    const frameRateValue = document.getElementById('frameRateValue');
-    const progressBar = document.getElementById('progressBar');
-    const progressContainer = document.querySelector('.progress');
-    let videoFile;
-
-    frameRateInput.addEventListener('input', () => {
-      frameRateValue.textContent = frameRateInput.value;
-    });
-
-    dropZone.addEventListener('click', () => videoInput.click());
-    dropZone.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      handleVideo(file);
-    });
-    videoInput.addEventListener('change', () => {
-      const file = videoInput.files[0];
-      handleVideo(file);
-    });
-
-    function handleVideo(file) {
-      videoFile = file;
-      const url = URL.createObjectURL(file);
-      videoPreview.src = url;
-      videoPreview.style.display = 'block';
-    }
-
-    function convertToGif() {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const frameRate = parseInt(document.getElementById('frameRate').value);
-      const width = parseInt(document.getElementById('gifWidth').value);
-      const height = parseInt(document.getElementById('gifHeight').value);
-      const quality = parseInt(document.getElementById('gifQuality').value);
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const gif = new GIF({
-        workers: 2,
-        quality: quality,
-        width,
-        height,
-        workerScript: 'https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.worker.js'
-      });
-
-      const duration = videoPreview.duration;
-      const frameCount = Math.floor(duration * frameRate);
-      let currentTime = 0;
-      let captured = 0;
-
-      progressContainer.style.display = 'block';
-
-      function updateProgress() {
-        const percent = Math.floor((captured / frameCount) * 100);
-        progressBar.style.width = percent + '%';
-        progressBar.textContent = percent + '%';
-      }
-
-      function captureFrame() {
-        if (captured >= frameCount) {
-          gif.render();
-          return;
-        }
-
-        videoPreview.currentTime = currentTime;
-        currentTime += 1 / frameRate;
-
-        videoPreview.onseeked = () => {
-          ctx.drawImage(videoPreview, 0, 0, width, height);
-          gif.addFrame(ctx, {copy: true, delay: 1000 / frameRate});
-          captured++;
-          updateProgress();
-          captureFrame();
-        };
-      }
-
-      gif.on('finished', blob => {
-        const url = URL.createObjectURL(blob);
-        document.getElementById('gifPreview').src = url;
-        const link = document.getElementById('downloadLink');
-        link.href = url;
-        link.style.display = 'inline-block';
-        progressContainer.style.display = 'none';
-      });
-
-      captureFrame();
-    }
-  </script>
 </body>
 </html>
-<!-- End of Video to GIF Converter Tool -->

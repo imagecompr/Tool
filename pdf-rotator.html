@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Page Rotator - MyToolsWebsite</title>
+  <meta name="description" content="Rotate pages in your PDF file with ease. Fast, frontend-only, and mobile-friendly tool." />
+  <meta name="keywords" content="rotate pdf, pdf page rotator, rotate pdf online, pdf tools" />
+  <meta name="author" content="MyToolsWebsite" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #f8f8f8;
+      color: #333;
+    }
+    header, footer {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      color: white;
+      text-align: center;
+      padding: 1rem;
+    }
+    .tool-container {
+      max-width: 900px;
+      margin: auto;
+      padding: 1rem;
+    }
+    .upload-zone {
+      background: white;
+      border: 2px dashed #00b09b;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+    .upload-zone.dragover {
+      background-color: #e1f7f2;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .progress {
+      height: 20px;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      display: none;
+      margin-bottom: 1rem;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      text-align: center;
+      color: white;
+      line-height: 20px;
+      font-weight: bold;
+    }
+    .pdf-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .pdf-preview canvas {
+      cursor: zoom-in;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
+    }
+    .pdf-preview canvas.zoomed {
+      transform: scale(2);
+      cursor: zoom-out;
+      z-index: 1000;
+    }
+    .pdf-wrapper {
+      text-align: center;
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 220px;
+    }
+    label {
+      display: block;
+      margin-top: 0.5rem;
+      font-weight: bold;
+    }
+    select {
+      margin-top: 0.3rem;
+      padding: 0.4rem;
+      font-size: 1rem;
+      background: #ffffff;
+      border: 1px solid #00b09b;
+      border-radius: 6px;
+      color: #005f56;
+      width: 100%;
+    }
+    button {
+      background: linear-gradient(to right, #00b09b, #96c93d);
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 1rem;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    #fileNameDisplay {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-style: italic;
+      color: #666;
+    }
+    @media (max-width: 768px) {
+      .pdf-preview {
+        flex-direction: column;
+        align-items: center;
+      }
+      .pdf-wrapper {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>PDF Page Rotator</h1></header>
+  <div class="tool-container">
+    <div class="upload-zone" id="uploadZone">
+      <p id="uploadLabel">Drag & Drop PDF file here or click to upload</p>
+      <input type="file" id="fileInput" accept="application/pdf" />
+    </div>
+    <div id="fileNameDisplay"></div>
+
+    <div class="progress" id="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <div class="pdf-preview" id="pdfPreview"></div>
+    <button id="previewBtn" style="display:none; margin-top:1rem">Preview Rotated PDF</button>
+    <button id="downloadBtn" style="display:none; margin-top:1rem">Download Rotated PDF</button>
+  </div>
+  <footer><p>&copy; 2025 MyToolsWebsite. All rights reserved.</p></footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    const fileInput = document.getElementById("fileInput");
+    const uploadZone = document.getElementById("uploadZone");
+    const pdfPreview = document.getElementById("pdfPreview");
+    const previewBtn = document.getElementById("previewBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const progress = document.getElementById("progress");
+    const progressBar = document.getElementById("progressBar");
+    const fileNameDisplay = document.getElementById("fileNameDisplay");
+
+    let originalPdfBytes = null;
+    let rotationMap = {};
+
+    uploadZone.addEventListener("click", () => fileInput.click());
+
+    uploadZone.addEventListener("dragover", e => {
+      e.preventDefault();
+      uploadZone.classList.add("dragover");
+    });
+    uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
+    uploadZone.addEventListener("drop", e => {
+      e.preventDefault();
+      uploadZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === "application/pdf") {
+        handlePDF(file);
+      }
+    });
+
+    fileInput.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file && file.type === "application/pdf") {
+        handlePDF(file);
+      }
+    });
+
+    async function handlePDF(file) {
+      fileNameDisplay.textContent = `Loaded File: ${file.name}`;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        originalPdfBytes = new Uint8Array(reader.result);
+        const pdfDoc = await pdfjsLib.getDocument({ data: originalPdfBytes }).promise;
+
+        pdfPreview.innerHTML = "";
+        rotationMap = {};
+
+        previewBtn.style.display = "inline-block";
+        downloadBtn.style.display = "inline-block";
+
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+          const page = await pdfDoc.getPage(i);
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          const viewport = page.getViewport({ scale: 0.3 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: context, viewport }).promise;
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "pdf-wrapper";
+
+          const label = document.createElement("label");
+          label.textContent = `Page ${i}`;
+          label.setAttribute("for", `rotate${i}`);
+
+          const select = document.createElement("select");
+          select.id = `rotate${i}`;
+          [0, 45, 90, 180, 270].forEach(deg => {
+            const opt = document.createElement("option");
+            opt.value = deg;
+            opt.textContent = `${deg}°`;
+            select.appendChild(opt);
+          });
+          select.addEventListener("change", () => {
+            rotationMap[i] = parseInt(select.value);
+
+            // Optional: Apply CSS transform for visual feedback
+            canvas.style.transform = `rotate(${rotationMap[i]}deg)`;
+          });
+
+          canvas.addEventListener("click", () => {
+            canvas.classList.toggle("zoomed");
+          });
+
+          wrapper.appendChild(label);
+          wrapper.appendChild(canvas);
+          wrapper.appendChild(select);
+
+          pdfPreview.appendChild(wrapper);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    previewBtn.addEventListener("click", async () => {
+      if (!originalPdfBytes) return;
+      const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
+      const pages = pdfDoc.getPages();
+
+      Object.entries(rotationMap).forEach(([pageIndex, degree]) => {
+        const idx = parseInt(pageIndex) - 1;
+        pages[idx].setRotation(degree);
+      });
+
+      const previewBytes = await pdfDoc.save();
+      const blob = new Blob([previewBytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    });
+
+    downloadBtn.addEventListener("click", async () => {
+      if (!originalPdfBytes) return;
+      progress.style.display = "block";
+      progressBar.style.width = "0%";
+      progressBar.textContent = "0%";
+
+      const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
+      const pages = pdfDoc.getPages();
+
+      let completed = 0;
+      for (let i = 0; i < pages.length; i++) {
+        const pageNum = i + 1;
+        if (rotationMap[pageNum]) {
+          pages[i].setRotation(rotationMap[pageNum]);
+        }
+        completed++;
+        const percent = Math.round((completed / pages.length) * 100);
+        progressBar.style.width = `${percent}%`;
+        progressBar.textContent = `${percent}%`;
+      }
+
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "rotated.pdf";
+      link.click();
+      progress.style.display = "none";
+    });
+  </script>
+</body>
+</html>

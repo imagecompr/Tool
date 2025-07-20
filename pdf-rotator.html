@@ -21,6 +21,14 @@
       text-align: center;
       padding: 1rem;
     }
+    header {
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+    footer {
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+    }
     .tool-container {
       max-width: 900px;
       margin: auto;
@@ -59,39 +67,32 @@
       font-weight: bold;
     }
     .pdf-preview {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 1rem;
       justify-content: center;
     }
     .pdf-preview canvas {
-      cursor: zoom-in;
       border: 1px solid #ccc;
       border-radius: 8px;
       transition: transform 0.3s ease;
     }
-    .pdf-preview canvas.zoomed {
-      transform: scale(2);
-      cursor: zoom-out;
-      z-index: 1000;
-    }
     .pdf-wrapper {
       text-align: center;
       background: white;
-      padding: 1rem;
+      padding: 0.5rem;
       border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      width: 220px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
     label {
       display: block;
-      margin-top: 0.5rem;
       font-weight: bold;
+      font-size: 0.9rem;
     }
     select {
-      margin-top: 0.3rem;
-      padding: 0.4rem;
-      font-size: 1rem;
+      margin-top: 0.25rem;
+      padding: 0.3rem;
+      font-size: 0.9rem;
       background: #ffffff;
       border: 1px solid #00b09b;
       border-radius: 6px;
@@ -101,12 +102,12 @@
     button {
       background: linear-gradient(to right, #00b09b, #96c93d);
       border: none;
-      padding: 0.75rem 1.5rem;
+      padding: 0.6rem 1.2rem;
       font-size: 1rem;
       color: white;
       border-radius: 6px;
       cursor: pointer;
-      margin-right: 1rem;
+      margin-top: 1rem;
     }
     button:hover {
       opacity: 0.9;
@@ -115,15 +116,16 @@
       text-align: center;
       margin-bottom: 1rem;
       font-style: italic;
-      color: #666;
+      color: #444;
     }
     @media (max-width: 768px) {
       .pdf-preview {
-        flex-direction: column;
-        align-items: center;
+        grid-template-columns: 1fr 1fr;
       }
-      .pdf-wrapper {
-        width: 100%;
+    }
+    @media (max-width: 480px) {
+      .pdf-preview {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -142,8 +144,7 @@
     </div>
 
     <div class="pdf-preview" id="pdfPreview"></div>
-    <button id="previewBtn" style="display:none; margin-top:1rem">Preview Rotated PDF</button>
-    <button id="downloadBtn" style="display:none; margin-top:1rem">Download Rotated PDF</button>
+    <button id="downloadBtn" style="display:none">Download Rotated PDF</button>
   </div>
   <footer><p>&copy; 2025 MyToolsWebsite. All rights reserved.</p></footer>
 
@@ -155,7 +156,6 @@
     const fileInput = document.getElementById("fileInput");
     const uploadZone = document.getElementById("uploadZone");
     const pdfPreview = document.getElementById("pdfPreview");
-    const previewBtn = document.getElementById("previewBtn");
     const downloadBtn = document.getElementById("downloadBtn");
     const progress = document.getElementById("progress");
     const progressBar = document.getElementById("progressBar");
@@ -165,7 +165,6 @@
     let rotationMap = {};
 
     uploadZone.addEventListener("click", () => fileInput.click());
-
     uploadZone.addEventListener("dragover", e => {
       e.preventDefault();
       uploadZone.classList.add("dragover");
@@ -175,16 +174,11 @@
       e.preventDefault();
       uploadZone.classList.remove("dragover");
       const file = e.dataTransfer.files[0];
-      if (file && file.type === "application/pdf") {
-        handlePDF(file);
-      }
+      if (file && file.type === "application/pdf") handlePDF(file);
     });
-
     fileInput.addEventListener("change", e => {
       const file = e.target.files[0];
-      if (file && file.type === "application/pdf") {
-        handlePDF(file);
-      }
+      if (file && file.type === "application/pdf") handlePDF(file);
     });
 
     async function handlePDF(file) {
@@ -193,18 +187,15 @@
       reader.onload = async () => {
         originalPdfBytes = new Uint8Array(reader.result);
         const pdfDoc = await pdfjsLib.getDocument({ data: originalPdfBytes }).promise;
-
         pdfPreview.innerHTML = "";
         rotationMap = {};
-
-        previewBtn.style.display = "inline-block";
         downloadBtn.style.display = "inline-block";
 
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const renderPage = async (i) => {
           const page = await pdfDoc.getPage(i);
           const canvas = document.createElement("canvas");
           const context = canvas.getContext("2d");
-          const viewport = page.getViewport({ scale: 0.3 });
+          const viewport = page.getViewport({ scale: 0.4 });
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           await page.render({ canvasContext: context, viewport }).promise;
@@ -214,11 +205,9 @@
 
           const label = document.createElement("label");
           label.textContent = `Page ${i}`;
-          label.setAttribute("for", `rotate${i}`);
 
           const select = document.createElement("select");
-          select.id = `rotate${i}`;
-          [0, 45, 90, 180, 270].forEach(deg => {
+          [0, 90, 180, 270].forEach(deg => {
             const opt = document.createElement("option");
             opt.value = deg;
             opt.textContent = `${deg}°`;
@@ -226,40 +215,35 @@
           });
           select.addEventListener("change", () => {
             rotationMap[i] = parseInt(select.value);
-
-            // Optional: Apply CSS transform for visual feedback
             canvas.style.transform = `rotate(${rotationMap[i]}deg)`;
-          });
-
-          canvas.addEventListener("click", () => {
-            canvas.classList.toggle("zoomed");
           });
 
           wrapper.appendChild(label);
           wrapper.appendChild(canvas);
           wrapper.appendChild(select);
-
           pdfPreview.appendChild(wrapper);
-        }
+        };
+
+        // Render pages in chunks to reduce blocking
+        const totalPages = pdfDoc.numPages;
+        let current = 1;
+        const chunkSize = 3;
+
+        const loadChunk = async () => {
+          const tasks = [];
+          for (let i = 0; i < chunkSize && current <= totalPages; i++, current++) {
+            tasks.push(renderPage(current));
+          }
+          await Promise.all(tasks);
+          if (current <= totalPages) {
+            setTimeout(loadChunk, 20);
+          }
+        };
+
+        loadChunk();
       };
       reader.readAsArrayBuffer(file);
     }
-
-    previewBtn.addEventListener("click", async () => {
-      if (!originalPdfBytes) return;
-      const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
-      const pages = pdfDoc.getPages();
-
-      Object.entries(rotationMap).forEach(([pageIndex, degree]) => {
-        const idx = parseInt(pageIndex) - 1;
-        pages[idx].setRotation(degree);
-      });
-
-      const previewBytes = await pdfDoc.save();
-      const blob = new Blob([previewBytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-    });
 
     downloadBtn.addEventListener("click", async () => {
       if (!originalPdfBytes) return;
@@ -270,14 +254,12 @@
       const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
       const pages = pdfDoc.getPages();
 
-      let completed = 0;
       for (let i = 0; i < pages.length; i++) {
         const pageNum = i + 1;
         if (rotationMap[pageNum]) {
           pages[i].setRotation(rotationMap[pageNum]);
         }
-        completed++;
-        const percent = Math.round((completed / pages.length) * 100);
+        const percent = Math.round(((i + 1) / pages.length) * 100);
         progressBar.style.width = `${percent}%`;
         progressBar.textContent = `${percent}%`;
       }

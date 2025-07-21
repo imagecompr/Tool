@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Trim or cut your videos easily in the browser. Fast, secure, and free video trimmer tool." />
-  <meta name="keywords" content="video trimmer, video cutter, trim video, cut mp4, online tool" />
+  <meta name="description" content="Trim or cut your videos easily in the browser." />
+  <meta name="keywords" content="video trimmer, video cutter, trim video, ffmpeg wasm" />
   <meta name="author" content="Your Name" />
   <title>Video Trimmer Tool</title>
   <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
@@ -22,12 +22,6 @@
       color: white;
       padding: 1rem 2rem;
       text-align: center;
-      border-top-left-radius: 2rem;
-      border-top-right-radius: 2rem;
-    }
-    footer {
-      border-bottom-left-radius: 2rem;
-      border-bottom-right-radius: 2rem;
     }
     h1 {
       margin: 0;
@@ -68,7 +62,7 @@
     label {
       font-weight: bold;
     }
-    input[type="number"], input[type="range"] {
+    input[type="number"] {
       padding: 0.5rem;
       border-radius: 0.5rem;
       border: 1px solid #ccc;
@@ -101,33 +95,52 @@
       gap: 1rem;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    #downloadLink {
+      display: none;
+      margin-top: 1rem;
+      text-align: center;
+      background: #00b09b;
+      color: white;
+      padding: 0.7rem 1.5rem;
+      border-radius: 1rem;
+      text-decoration: none;
+      display: inline-block;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Video Trimmer Tool</h1>
+    <h1>🎬 Video Trimmer Tool</h1>
   </header>
   <div class="container">
-    <div class="upload-zone" id="uploadZone">Click or drag & drop your video file here</div>
+    <div class="upload-zone" id="uploadZone">Click or drag & drop your video here</div>
     <input type="file" id="videoInput" accept="video/*" />
-    <video id="videoPreview" controls></video>
+    <video id="videoPreview" controls style="display:none;"></video>
+
     <div class="timeline">
-      <label>Start Time (s): <input type="number" id="startTime" value="0" /></label>
-      <label>End Time (s): <input type="number" id="endTime" value="5" /></label>
+      <label>Start (s): <input type="number" id="startTime" value="0" step="0.1" /></label>
+      <label>End (s): <input type="number" id="endTime" value="5" step="0.1" /></label>
     </div>
+
     <div class="controls">
-      <button id="smartCut">Smart Cut</button>
+      <button id="smartCut">Smart Cut (0 to half)</button>
       <button id="trimBtn">Trim Video</button>
     </div>
+
     <div id="progress">
       <div id="progressBar"></div>
     </div>
-    <a id="downloadLink" style="display:none;" download="trimmed.mp4">Download Trimmed Video</a>
+
+    <a id="downloadLink" download="trimmed.mp4">Download Trimmed Video</a>
   </div>
+
   <footer>
-    <p>© 2025 Video Trimmer Tool. All rights reserved.</p>
+    <p>© 2025 Video Trimmer Tool</p>
   </footer>
+
   <script>
     const uploadZone = document.getElementById('uploadZone');
     const videoInput = document.getElementById('videoInput');
@@ -164,48 +177,68 @@
       const url = URL.createObjectURL(file);
       videoPreview.src = url;
       videoPreview.style.display = 'block';
+      downloadLink.style.display = 'none';
     }
+
+    // Load ffmpeg.wasm
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    (async () => {
+      trimBtn.disabled = true;
+      await ffmpeg.load();
+      trimBtn.disabled = false;
+    })();
+
+    ffmpeg.setProgress(({ ratio }) => {
+      progress.style.display = 'block';
+      progressBar.style.width = `${Math.round(ratio * 100)}%`;
+    });
 
     trimBtn.addEventListener('click', async () => {
       if (!uploadedFile) return alert('Please upload a video first.');
 
       const startTime = parseFloat(startTimeInput.value);
       const endTime = parseFloat(endTimeInput.value);
-
       if (isNaN(startTime) || isNaN(endTime) || endTime <= startTime) {
-        alert('Invalid start or end time.');
-        return;
+        return alert('Invalid start or end time.');
       }
 
-      const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: true });
-
-      progress.style.display = 'block';
+      downloadLink.style.display = 'none';
       progressBar.style.width = '0%';
 
-      if (!ffmpeg.isLoaded()) await ffmpeg.load();
+      try {
+        // Clean up old files if they exist
+        try { ffmpeg.FS('unlink', 'input.mp4'); } catch (e) {}
+        try { ffmpeg.FS('unlink', 'output.mp4'); } catch (e) {}
 
-      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(uploadedFile));
-      await ffmpeg.run(
-        '-ss', `${startTime}`,
-        '-to', `${endTime}`,
-        '-i', 'input.mp4',
-        '-c', 'copy',
-        'output.mp4'
-      );
+        ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(uploadedFile));
 
-      const data = ffmpeg.FS('readFile', 'output.mp4');
-      const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        await ffmpeg.run(
+          '-ss', `${startTime}`,
+          '-to', `${endTime}`,
+          '-i', 'input.mp4',
+          '-c', 'copy',
+          'output.mp4'
+        );
 
-      downloadLink.href = url;
-      downloadLink.style.display = 'inline-block';
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
 
-      progressBar.style.width = '100%';
+        downloadLink.href = url;
+        downloadLink.style.display = 'inline-block';
+        progressBar.style.width = '100%';
+      } catch (err) {
+        console.error(err);
+        alert('Something went wrong during trimming.');
+      }
     });
 
     smartCutBtn.addEventListener('click', () => {
-      startTimeInput.value = 0;
-      endTimeInput.value = Math.floor(videoPreview.duration / 2);
+      if (videoPreview.duration) {
+        startTimeInput.value = 0;
+        endTimeInput.value = Math.floor(videoPreview.duration / 2);
+      }
     });
   </script>
 </body>

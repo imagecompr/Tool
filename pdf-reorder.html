@@ -9,9 +9,7 @@
   <meta name="author" content="MyToolsWebsite" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
   <style>
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
     body {
       min-height: 100vh;
       display: flex;
@@ -69,17 +67,15 @@
     }
     .file-info {
       margin-top: 1rem;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: #2e7d32;
       font-weight: 500;
       opacity: 0;
-      transition: opacity 0.5s ease-in-out;
+      transition: opacity 0.5s;
       text-align: center;
       width: 100%;
     }
-    .file-info.visible {
-      opacity: 1;
-    }
+    .file-info.visible { opacity: 1; }
     .page-thumbnails {
       display: flex;
       flex-wrap: wrap;
@@ -105,16 +101,21 @@
       padding: 5px;
       position: relative;
       box-sizing: border-box;
+      transition: box-shadow 0.2s;
+    }
+    .page-thumb:active {
+      box-shadow: 0 0 0 3px #d0ebff;
     }
     .rotate-btn, .delete-btn {
       position: absolute;
-      font-size: 0.7rem;
-      padding: 2px 5px;
+      font-size: 0.8rem;
+      padding: 2px 7px;
       border: none;
       border-radius: 6px;
       background: #96c93d;
       color: white;
       cursor: pointer;
+      z-index: 1;
     }
     .rotate-btn {
       bottom: 4px;
@@ -139,7 +140,7 @@
       background: #00b09b;
       color: white;
       line-height: 20px;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       text-align: center;
       transition: width 0.4s;
     }
@@ -152,7 +153,7 @@
       cursor: pointer;
       font-weight: 600;
       margin-top: 1rem;
-      transition: background 0.3s ease;
+      transition: background 0.3s;
       font-size: 1rem;
     }
     button:hover {
@@ -191,7 +192,7 @@
       .page-thumb {
         width: 60px;
         height: 100px;
-        font-size: 0.75rem;
+        font-size: 0.78rem;
         padding: 3px;
       }
     }
@@ -202,9 +203,7 @@
         height: 25vw;
         max-height: 70px;
       }
-      .tool-container {
-        padding: 0.4rem 1vw;
-      }
+      .tool-container { padding: 0.4rem 1vw; }
     }
   </style>
 </head>
@@ -230,42 +229,56 @@
   <footer>
     <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
   </footer>
+  <!-- Libraries: -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
   <script>
+    // Set up PDF.js Worker explicitly
+    if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+    }
+
     const uploadZone = document.getElementById('uploadZone');
     const pdfInput = document.getElementById('pdfInput');
     const fileInfo = document.getElementById('fileInfo');
     const thumbnails = document.getElementById('pageThumbnails');
     let loadedPdf, originalPdfBytes;
 
+    // File select (button)
     uploadZone.addEventListener('click', () => pdfInput.click());
-    uploadZone.addEventListener('dragover', (e) => {
+    // Drag and drop
+    uploadZone.addEventListener('dragover', e => {
       e.preventDefault();
       uploadZone.classList.add('dragover');
     });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-    uploadZone.addEventListener('drop', (e) => {
+    uploadZone.addEventListener('drop', e => {
       e.preventDefault();
       uploadZone.classList.remove('dragover');
-      const dt = new DataTransfer();
-      dt.items.add(e.dataTransfer.files[0]);
-      pdfInput.files = dt.files;
-      pdfInput.dispatchEvent(new Event('change'));
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        pdfInput.files = e.dataTransfer.files;
+        loadPDF();
+      }
     });
+    // File input
     pdfInput.addEventListener('change', loadPDF);
 
     async function loadPDF() {
       const file = pdfInput.files[0];
-      if (!file) return;
+      if (!file || !file.type.includes('pdf')) {
+        alert('Please select a PDF file.');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = async function () {
         originalPdfBytes = new Uint8Array(reader.result);
-        if (!window.pdfjsLib) {
-          window.pdfjsLib = window['pdfjs-dist/build/pdf'];
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        try {
+          loadedPdf = await pdfjsLib.getDocument({ data: originalPdfBytes }).promise;
+        } catch (e) {
+          alert("Unable to read PDF: " + e.message);
+          return;
         }
-        loadedPdf = await window.pdfjsLib.getDocument({ data: originalPdfBytes }).promise;
         fileInfo.innerHTML = `<strong>File loaded:</strong> ${file.name} <br><small>Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</small>`;
         fileInfo.classList.add('visible');
         thumbnails.innerHTML = '';
@@ -276,10 +289,12 @@
           div.textContent = `Page ${i}`;
           div.dataset.page = i - 1;
           div.dataset.rotate = 0;
+
           const rotateBtn = document.createElement('button');
           rotateBtn.className = 'rotate-btn';
           rotateBtn.textContent = '↻';
-          rotateBtn.onclick = () => {
+          rotateBtn.onclick = (ev) => {
+            ev.stopPropagation();
             const current = parseInt(div.dataset.rotate);
             const newAngle = (current + 90) % 360;
             div.dataset.rotate = newAngle;
@@ -288,13 +303,16 @@
           const deleteBtn = document.createElement('button');
           deleteBtn.className = 'delete-btn';
           deleteBtn.textContent = '×';
-          deleteBtn.onclick = () => div.remove();
+          deleteBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            div.remove();
+          };
           div.appendChild(deleteBtn);
           div.appendChild(rotateBtn);
           thumbnails.appendChild(div);
         }
-        thumbnails.scrollIntoView({ behavior: "smooth" });
         initDragAndDrop();
+        thumbnails.scrollIntoView({ behavior: "smooth" });
       };
       reader.readAsArrayBuffer(file);
     }
@@ -319,12 +337,13 @@
     }
 
     async function reorderPDF() {
-      if (!loadedPdf) return alert("Please upload a PDF file first.");
+      if (!loadedPdf) return alert('Please upload a PDF file first.');
       const progressBar = document.getElementById('progressBar');
       const progress = document.getElementById('progress');
       progress.style.display = 'block';
       progressBar.style.width = '10%';
       progressBar.textContent = 'Processing...';
+
       const pdfDoc = await PDFLib.PDFDocument.load(originalPdfBytes);
       const newPdf = await PDFLib.PDFDocument.create();
       const order = [...thumbnails.children];

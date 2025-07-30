@@ -10,15 +10,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
+   
+    html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom right, #fdfdfd, #f2f6fb);
+  display: flex;
+  flex-direction: column;
+}
+    main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+}
+
+
     header, footer {
       width: 100%;
       text-align: center;
@@ -108,7 +117,7 @@
 </head>
 <body>
   <header><h1>ZIP Viewer & Extractor</h1></header>
-
+<main>
   <div class="tool-container">
     <div class="upload-zone" id="uploadZone">
       <p>Drag & Drop ZIP file here or click to upload</p>
@@ -122,7 +131,7 @@
     <ul id="fileList"></ul>
     <button id="extractBtn" style="display:none">Extract ZIP</button>
   </div>
-
+</main>
   <footer><p>&copy; 2025 MyToolsWebsite. All rights reserved.</p></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>

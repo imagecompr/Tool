@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PDF Page Rotator - MyToolsWebsite</title>
   <meta name="description" content="Rotate pages in your PDF file with ease. Fast, frontend-only, and mobile-friendly tool.">
   <meta name="keywords" content="rotate pdf, pdf page rotator, rotate pdf online, pdf tools">
@@ -11,8 +11,7 @@
   <style>
     html, body { height: 100%; margin: 0; padding: 0; }
     body {
-      min-height: 100vh;
-      display: flex; flex-direction: column;
+      min-height: 100vh; display: flex; flex-direction: column;
       background: #f8f8f8; color: #333;
       font-family: 'Poppins', sans-serif;
     }
@@ -95,7 +94,7 @@
       </div>
       <div id="fileNameDisplay"></div>
       <div class="pdf-preview" id="pdfPreview"></div>
-      <!-- Progress bar JUST ABOVE the download button -->
+      <!-- Progress bar just above download button -->
       <div class="progress" id="progress">
         <div class="progress-bar" id="progressBar">0%</div>
       </div>
@@ -172,6 +171,7 @@
             rotationMap[i] = parseInt(select.value);
             canvas.style.transform = `rotate(${rotationMap[i]}deg)`;
           });
+          rotationMap[i] = 0; // initialize
 
           wrapper.appendChild(label);
           wrapper.appendChild(canvas);
@@ -179,7 +179,7 @@
           pdfPreview.appendChild(wrapper);
         };
 
-        // Render pages in chunks to reduce blocking
+        // Render pages in chunks
         const totalPages = pdfDoc.numPages;
         let current = 1;
         const chunkSize = 3;
@@ -194,7 +194,6 @@
             setTimeout(loadChunk, 20);
           }
         };
-
         loadChunk();
       };
       reader.readAsArrayBuffer(file);
@@ -210,10 +209,10 @@
       const pages = pdfDoc.getPages();
 
       for (let i = 0; i < pages.length; i++) {
+        // Always set rotation (defaulting to 0)
         const pageNum = i + 1;
-        if (rotationMap[pageNum]) {
-          pages[i].setRotation(PDFLib.degrees(rotationMap[pageNum])); // FIXED
-        }
+        const deg = (typeof rotationMap[pageNum] !== "undefined") ? rotationMap[pageNum] : 0;
+        pages[i].setRotation(PDFLib.degrees(deg));
         const percent = Math.round(((i + 1) / pages.length) * 100);
         progressBar.style.width = `${percent}%`;
         progressBar.textContent = `${percent}%`;
@@ -224,9 +223,12 @@
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "rotated.pdf";
-      document.body.appendChild(link);
+      document.body.appendChild(link); // Always add before click
       link.click();
-      document.body.removeChild(link);
+      setTimeout(() => {
+        window.URL.revokeObjectURL(link.href);
+        link.remove();
+      }, 200);
       progress.style.display = "none";
     });
   </script>

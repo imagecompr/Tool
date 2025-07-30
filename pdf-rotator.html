@@ -4,22 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PDF Page Rotator - MyToolsWebsite</title>
-  <meta name="description" content="Rotate pages in your PDF file with ease. Fast, frontend-only, and mobile-friendly tool." />
-  <meta name="keywords" content="rotate pdf, pdf page rotator, rotate pdf online, pdf tools" />
-  <meta name="author" content="MyToolsWebsite" />
+  <meta name="description" content="Rotate pages in your PDF file with ease. Fast, frontend-only, and mobile-friendly tool.">
+  <meta name="keywords" content="rotate pdf, pdf page rotator, rotate pdf online, pdf tools">
+  <meta name="author" content="MyToolsWebsite">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body {
+    html, body {
+      height: 100%;
       margin: 0;
-      font-family: 'Poppins', sans-serif;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
       background: #f8f8f8;
       color: #333;
+      font-family: 'Poppins', sans-serif;
     }
     header, footer {
       background: linear-gradient(to right, #00b09b, #96c93d);
       color: white;
       text-align: center;
       padding: 1rem;
+      flex-shrink: 0;
     }
     header {
       border-bottom-left-radius: 16px;
@@ -28,11 +36,25 @@
     footer {
       border-top-left-radius: 16px;
       border-top-right-radius: 16px;
+      margin-top: auto;
+    }
+    main {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
     }
     .tool-container {
       max-width: 900px;
+      width: 100%;
       margin: auto;
       padding: 1rem;
+      box-sizing: border-box;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
     }
     .upload-zone {
       background: white;
@@ -42,6 +64,7 @@
       cursor: pointer;
       border-radius: 12px;
       margin-bottom: 1rem;
+      transition: background 0.2s;
     }
     .upload-zone.dragover {
       background-color: #e1f7f2;
@@ -56,6 +79,10 @@
       overflow: hidden;
       display: none;
       margin-bottom: 1rem;
+      width: 100%;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .progress-bar {
       height: 100%;
@@ -65,39 +92,58 @@
       color: white;
       line-height: 20px;
       font-weight: bold;
+      transition: width 0.4s;
+      min-width: 40px;
+    }
+    #fileNameDisplay {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-style: italic;
+      color: #444;
+      word-break: break-all;
     }
     .pdf-preview {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 1rem;
       justify-content: center;
+      width: 100%;
     }
     .pdf-preview canvas {
       border: 1px solid #ccc;
       border-radius: 8px;
       transition: transform 0.3s ease;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
     }
     .pdf-wrapper {
       text-align: center;
       background: white;
       padding: 0.5rem;
       border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
     }
     label {
       display: block;
       font-weight: bold;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      margin-bottom: 0.3rem;
     }
     select {
-      margin-top: 0.25rem;
+      margin-top: 0.3rem;
       padding: 0.3rem;
-      font-size: 0.9rem;
+      font-size: 0.93rem;
       background: #ffffff;
       border: 1px solid #00b09b;
       border-radius: 6px;
       color: #005f56;
-      width: 100%;
+      width: 90%;
+      max-width: 120px;
     }
     button {
       background: linear-gradient(to right, #00b09b, #96c93d);
@@ -108,46 +154,55 @@
       border-radius: 6px;
       cursor: pointer;
       margin-top: 1rem;
+      transition: opacity 0.2s;
+      align-self: center;
     }
     button:hover {
       opacity: 0.9;
     }
-    #fileNameDisplay {
-      text-align: center;
-      margin-bottom: 1rem;
-      font-style: italic;
-      color: #444;
+    @media (max-width: 900px) {
+      .tool-container {
+        max-width: 98vw;
+        padding: 0.7rem 2vw;
+      }
     }
     @media (max-width: 768px) {
       .pdf-preview {
         grid-template-columns: 1fr 1fr;
       }
+      .tool-container {
+        padding: 1rem 5vw;
+      }
     }
     @media (max-width: 480px) {
       .pdf-preview {
         grid-template-columns: 1fr;
+        gap: 0.7rem;
+      }
+      .tool-container {
+        padding: 0.7rem 2vw;
       }
     }
   </style>
 </head>
 <body>
   <header><h1>PDF Page Rotator</h1></header>
-  <div class="tool-container">
-    <div class="upload-zone" id="uploadZone">
-      <p id="uploadLabel">Drag & Drop PDF file here or click to upload</p>
-      <input type="file" id="fileInput" accept="application/pdf" />
+  <main>
+    <div class="tool-container">
+      <div class="upload-zone" id="uploadZone">
+        <p id="uploadLabel">Drag & Drop PDF file here or click to upload</p>
+        <input type="file" id="fileInput" accept="application/pdf" />
+      </div>
+      <div id="fileNameDisplay"></div>
+      <div class="progress" id="progress">
+        <div class="progress-bar" id="progressBar">0%</div>
+      </div>
+      <div class="pdf-preview" id="pdfPreview"></div>
+      <button id="downloadBtn" style="display:none">Download Rotated PDF</button>
     </div>
-    <div id="fileNameDisplay"></div>
-
-    <div class="progress" id="progress">
-      <div class="progress-bar" id="progressBar">0%</div>
-    </div>
-
-    <div class="pdf-preview" id="pdfPreview"></div>
-    <button id="downloadBtn" style="display:none">Download Rotated PDF</button>
-  </div>
+  </main>
   <footer><p>&copy; 2025 MyToolsWebsite. All rights reserved.</p></footer>
-
+  <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script>

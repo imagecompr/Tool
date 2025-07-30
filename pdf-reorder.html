@@ -206,6 +206,14 @@
       .tool-container { padding: 0.4rem 1vw; }
     }
   </style>
+  <!-- Libraries must load FIRST, and pdfjsLib must be defined BEFORE using! -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+  <script>
+    // This is CRITICAL — do not remove, move, or change!
+    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+  </script>
 </head>
 <body>
   <header>
@@ -229,15 +237,8 @@
   <footer>
     <p>&copy; 2025 MyToolsWebsite. All rights reserved.</p>
   </footer>
-  <!-- Libraries: -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
   <script>
-    // Set up PDF.js Worker explicitly
-    if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
-    }
-
+    // UI Elements
     const uploadZone = document.getElementById('uploadZone');
     const pdfInput = document.getElementById('pdfInput');
     const fileInfo = document.getElementById('fileInfo');

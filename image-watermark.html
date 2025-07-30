@@ -91,12 +91,6 @@
       gap: 0.5rem;
       margin-top: 1rem;
     }
-    .action-buttons {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
   </style>
 </head>
 <body>
@@ -137,12 +131,8 @@
     </div>
 
     <canvas id="previewCanvas"></canvas>
-
-    <div class="action-buttons">
-      <button onclick="undoLast()">Undo Last</button>
-      <button onclick="downloadImage()">Download Image</button>
-    </div>
-
+    <button onclick="undoLast()">Undo Last</button>
+    <button onclick="downloadImage()">Download Image</button>
     <div id="status" class="status-message"></div>
   </main>
   <footer>© 2025 MyToolsWebsite. All rights reserved.</footer>
@@ -217,7 +207,7 @@
       drawCanvas();
       showStatus("Last watermark removed.", true);
     }
-
+    
     function setPosition(pos) {
       if (!baseImage || layers.length === 0) return showStatus("Add a watermark first");
       const layer = layers[layers.length - 1];
@@ -238,73 +228,73 @@
       }
 
       drawCanvas();
-      showStatus(`
-function drawCanvas() {
-  if (!baseImage) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(baseImage, 0, 0);
-  layers.forEach(layer => {
-    if (layer.type === 'text') {
-      ctx.globalAlpha = layer.opacity;
-      ctx.fillStyle = layer.color;
-      ctx.font = `${layer.size}px Poppins`;
-      ctx.fillText(layer.text, layer.x, layer.y);
+      showStatus(`Watermark moved to ${pos.replace('-', ' ')}`, true);
     }
-  });
-  ctx.globalAlpha = 1;
-}
 
-function downloadImage() {
-  if (!baseImage) return showStatus("No image to download.");
-  const link = document.createElement('a');
-  link.download = 'watermarked-image.png';
-  link.href = canvas.toDataURL();
-  link.click();
-  showStatus("Image downloaded successfully!", true);
-}
+    function drawCanvas() {
+      if (!baseImage) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseImage, 0, 0);
+      layers.forEach(layer => {
+        if (layer.type === 'text') {
+          ctx.globalAlpha = layer.opacity;
+          ctx.fillStyle = layer.color;
+          ctx.font = `${layer.size}px Poppins`;
+          ctx.fillText(layer.text, layer.x, layer.y);
+        }
+      });
+      ctx.globalAlpha = 1;
+    }
 
-function showStatus(msg, success = false) {
-  statusMsg.textContent = msg;
-  statusMsg.className = 'status-message' + (success ? ' success' : '');
-}
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'watermarked-image.png';
+      link.href = canvas.toDataURL();
+      link.click();
+      showStatus("Image downloaded successfully!", true);
+    }
 
-// Dragging watermark text
-canvas.addEventListener('mousedown', (e) => {
-  if (layers.length === 0) return;
-  const layer = layers[layers.length - 1];
-  const mouseX = e.offsetX;
-  const mouseY = e.offsetY;
-  ctx.font = `${layer.size}px Poppins`;
-  const textWidth = ctx.measureText(layer.text).width;
-  const textHeight = layer.size;
+    function showStatus(msg, success = false) {
+      statusMsg.textContent = msg;
+      statusMsg.className = 'status-message' + (success ? ' success' : '');
+    }
 
-  if (
-    mouseX >= layer.x &&
-    mouseX <= layer.x + textWidth &&
-    mouseY <= layer.y &&
-    mouseY >= layer.y - textHeight
-  ) {
-    dragging = true;
-    dragOffsetX = mouseX - layer.x;
-    dragOffsetY = mouseY - layer.y;
-    canvas.style.cursor = 'grabbing';
-  }
-});
+    canvas.addEventListener('mousedown', (e) => {
+      if (layers.length === 0) return;
+      const layer = layers[layers.length - 1];
+      const mouseX = e.offsetX;
+      const mouseY = e.offsetY;
+      ctx.font = `${layer.size}px Poppins`;
+      const textWidth = ctx.measureText(layer.text).width;
+      const textHeight = layer.size;
 
-canvas.addEventListener('mousemove', (e) => {
-  if (!dragging) return;
-  const layer = layers[layers.length - 1];
-  layer.x = e.offsetX - dragOffsetX;
-  layer.y = e.offsetY - dragOffsetY;
-  drawCanvas();
-});
+      if (
+        mouseX >= layer.x &&
+        mouseX <= layer.x + textWidth &&
+        mouseY <= layer.y &&
+        mouseY >= layer.y - textHeight
+      ) {
+        dragging = true;
+        dragOffsetX = mouseX - layer.x;
+        dragOffsetY = mouseY - layer.y;
+      }
+    });
 
-canvas.addEventListener('mouseup', () => {
-  dragging = false;
-  canvas.style.cursor = 'move';
-});
+    canvas.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const layer = layers[layers.length - 1];
+      layer.x = e.offsetX - dragOffsetX;
+      layer.y = e.offsetY - dragOffsetY;
+      drawCanvas();
+    });
 
-canvas.addEventListener('mouseleave', () => {
-  dragging = false;
-  canvas.style.cursor = 'move';
-});
+    canvas.addEventListener('mouseup', () => {
+      dragging = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      dragging = false;
+    });
+  </script>
+</body>
+</html>
